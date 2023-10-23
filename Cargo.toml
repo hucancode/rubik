@@ -8,4 +8,5 @@ winit = "0.28"
 env_logger = "0.10"
 log = "0.4"
 wgpu = "^0.17"
+bytemuck = { version = "1.12", features = [ "derive" ] }
 pollster = "0.3.0"
