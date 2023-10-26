@@ -1,8 +1,9 @@
 use crate::geometry::Vertex;
 use crate::geometry::Geometry;
+use wgpu::Device;
 
 impl Geometry {
-	pub fn new_cube(col: u32) -> Self {
+	pub fn new_cube(col: u32, device: &Device) -> Self {
 		let vertex_data = [
 			// top (0, 0, 1)
 			Vertex::new([-1.0, -1.0, 1.0], col),
@@ -43,9 +44,6 @@ impl Geometry {
 			16, 17, 18, 18, 19, 16, // front
 			20, 21, 22, 22, 23, 20, // back
 		];
-		Self {
-			vertices: vertex_data.to_vec(),
-			indices: index_data.to_vec()
-		}
+		Self::new(vertex_data.to_vec(), index_data.to_vec(), device)
 	}
 }

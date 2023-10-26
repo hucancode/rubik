@@ -1,8 +1,9 @@
 use crate::geometry::Vertex;
 use crate::geometry::Geometry;
+use wgpu::Device;
 
 impl Geometry {
-	pub fn new_rubik_piece() -> Self {
+	pub fn new_rubik_piece(device: &Device) -> Self {
 		let green = 0x40a02bff; // right - green
 		let purple = 0x89b4faff; // left - purple
 		let yellow = 0xf9e2afff; // top - yellow
@@ -49,9 +50,6 @@ impl Geometry {
 			16, 17, 18, 18, 19, 16, // front
 			20, 21, 22, 22, 23, 20, // back
 		];
-		Self {
-			vertices: vertex_data.to_vec(),
-			indices: index_data.to_vec()
-		}
+		Self::new(vertex_data.to_vec(), index_data.to_vec(), device)
 	}
 }
