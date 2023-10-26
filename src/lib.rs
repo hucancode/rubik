@@ -1,4 +1,9 @@
-use bytemuck::{Pod, Zeroable};
+mod shader;
+mod geometry;
+mod scene;
+use crate::geometry::Geometry;
+use crate::shader::Shader;
+
 use glam::{Mat4, Vec3};
 use std::borrow::Cow;
 use std::f32::consts;
@@ -9,95 +14,9 @@ use winit::{
     window::Window,
 };
 
-#[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
-struct Vertex {
-    position: [f32; 4],
-    color: [f32; 4],
-}
-impl Vertex {
-    fn desc() -> wgpu::VertexBufferLayout<'static> {
-        const ATTRIBS: [wgpu::VertexAttribute; 2] =
-            wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4];
-        wgpu::VertexBufferLayout {
-            array_stride: std::mem::size_of::<Vertex>() as wgpu::BufferAddress,
-            step_mode: wgpu::VertexStepMode::Vertex,
-            attributes: &ATTRIBS,
-        }
-    }
-}
-fn make_vertex(pos: [f32; 3], col: u32) -> Vertex {
-    let x = pos[0];
-    let y = pos[1];
-    let z = pos[2];
-    let w = 1.0;
-    let r = 0xff & (col >> 24);
-    let g = 0xff & (col >> 16);
-    let b = 0xff & (col >> 8);
-    let a = 0xff & col;
-    Vertex {
-        position: [x, y, z, w],
-        color: [
-            r as f32 / 255.0,
-            g as f32 / 255.0,
-            b as f32 / 255.0,
-            a as f32 / 255.0,
-        ],
-    }
-}
-
-fn make_cube_vertices() -> (Vec<Vertex>, Vec<u16>) {
-    let green = 0x40a02bff; // right - green
-    let purple = 0x89b4faff; // left - purple
-    let yellow = 0xf9e2afff; // top - yellow
-    let white = 0xf8fafcff; // bottom - white
-    let red = 0xef4444ff; // front - red
-    let orange = 0xfe640bff; // back - orange
-    let vertex_data = [
-        // top (0, 0, 1)
-        make_vertex([-1.0, -1.0, 1.0], yellow),
-        make_vertex([1.0, -1.0, 1.0], yellow),
-        make_vertex([1.0, 1.0, 1.0], yellow),
-        make_vertex([-1.0, 1.0, 1.0], yellow),
-        // bottom (0, 0, -1.0)
-        make_vertex([-1.0, 1.0, -1.0], white),
-        make_vertex([1.0, 1.0, -1.0], white),
-        make_vertex([1.0, -1.0, -1.0], white),
-        make_vertex([-1.0, -1.0, -1.0], white),
-        // right (1, 0, 0)
-        make_vertex([1.0, -1.0, -1.0], green),
-        make_vertex([1.0, 1.0, -1.0], green),
-        make_vertex([1.0, 1.0, 1.0], green),
-        make_vertex([1.0, -1.0, 1.0], green),
-        // left (-1, 0, 0)
-        make_vertex([-1.0, -1.0, 1.0], purple),
-        make_vertex([-1.0, 1.0, 1.0], purple),
-        make_vertex([-1.0, 1.0, -1.0], purple),
-        make_vertex([-1.0, -1.0, -1.0], purple),
-        // front (0, 1.0, 0)
-        make_vertex([1.0, 1.0, -1.0], red),
-        make_vertex([-1.0, 1.0, -1.0], red),
-        make_vertex([-1.0, 1.0, 1.0], red),
-        make_vertex([1.0, 1.0, 1.0], red),
-        // back (0, -1.0, 0)
-        make_vertex([1.0, -1.0, 1.0], orange),
-        make_vertex([-1.0, -1.0, 1.0], orange),
-        make_vertex([-1.0, -1.0, -1.0], orange),
-        make_vertex([1.0, -1.0, -1.0], orange),
-    ];
-    let index_data: &[u16] = &[
-        0, 1, 2, 2, 3, 0, // top
-        4, 5, 6, 6, 7, 4, // bottom
-        8, 9, 10, 10, 11, 8, // right
-        12, 13, 14, 14, 15, 12, // left
-        16, 17, 18, 18, 19, 16, // front
-        20, 21, 22, 22, 23, 20, // back
-    ];
-    (vertex_data.to_vec(), index_data.to_vec())
-}
 fn make_mvp_matrix(aspect_ratio: f32) -> Mat4 {
     let projection = Mat4::perspective_rh(consts::FRAC_PI_4, aspect_ratio, 1.0, 10.0);
-    let view = Mat4::look_at_rh(Vec3::new(1.5f32, -5.0, 3.0), Vec3::ZERO, Vec3::Z);
+    let view = Mat4::look_at_rh(Vec3::new(1.5, -5.0, 3.0), Vec3::ZERO, Vec3::Z);
     projection * view
 }
 
@@ -134,16 +53,16 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
     });
 
-    let (vertex_data, index_data) = make_cube_vertices();
+    let rubik_piece_geometry = Geometry::new_rubik_piece();
 
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Vertex Buffer"),
-        contents: bytemuck::cast_slice(&vertex_data),
+        contents: bytemuck::cast_slice(&rubik_piece_geometry.vertices),
         usage: wgpu::BufferUsages::VERTEX,
     });
     let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Index Buffer"),
-        contents: bytemuck::cast_slice(&index_data),
+        contents: bytemuck::cast_slice(&rubik_piece_geometry.indices),
         usage: wgpu::BufferUsages::INDEX,
     });
 
@@ -176,7 +95,7 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         vertex: wgpu::VertexState {
             module: &shader,
             entry_point: "vs_main",
-            buffers: &[Vertex::desc()],
+            buffers: &[geometry::Vertex::desc()],
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader,
@@ -263,7 +182,7 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
                     rpass.set_bind_group(0, &bind_group, &[]);
                     rpass.set_index_buffer(index_buffer.slice(..), wgpu::IndexFormat::Uint16);
                     rpass.set_vertex_buffer(0, vertex_buffer.slice(..));
-                    let n = index_data.len() as u32;
+                    let n = rubik_piece_geometry.indices.len() as u32;
                     rpass.draw_indexed(0..n, 0, 0..1);
                 }
                 queue.submit(Some(encoder.finish()));
