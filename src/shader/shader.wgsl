@@ -3,9 +3,11 @@ struct VertexOutput {
     @builtin(position) position: vec4<f32>,
 };
 
-@group(0)
-@binding(0)
-var<uniform> transform: mat4x4<f32>;
+@group(0) @binding(0)
+var<uniform> world: mat4x4<f32>;
+@group(1) @binding(0)
+var<uniform> view_proj: mat4x4<f32>;
+
 
 @vertex
 fn vs_main(
@@ -14,7 +16,7 @@ fn vs_main(
 ) -> VertexOutput {
     var result: VertexOutput;
     result.color = color;
-    result.position = transform * position;
+    result.position = view_proj * world * position;
     return result;
 }
 
