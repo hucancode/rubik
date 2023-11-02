@@ -3,15 +3,15 @@ use crate::shader::Shader;
 use crate::world::Camera;
 use crate::world::Node;
 use glam::Mat4;
-use std::collections::VecDeque;
-use wgpu::util::DeviceExt;
+use std::mem::size_of;
+use wgpu::util::{align_to, BufferInitDescriptor, DeviceExt};
 use wgpu::{
-    util::BufferInitDescriptor, BindGroup, BindGroupDescriptor, BindGroupLayoutDescriptor,
-    BindGroupLayoutEntry, Buffer, Device, PipelineLayoutDescriptor, Queue, RenderPipeline,
+    BindGroup, BindGroupDescriptor, BindGroupLayoutDescriptor, BindGroupLayoutEntry, Buffer,
+    BufferDescriptor, Device, PipelineLayoutDescriptor, Queue, RenderPipeline,
     RenderPipelineDescriptor, Surface, SurfaceConfiguration,
 };
 use winit::window::Window;
-
+const MAX_ENTITY: u64 = 10;
 pub struct Renderer {
     pub camera: Camera,
     pub root: Node,
@@ -88,7 +88,7 @@ impl Renderer {
                 visibility: wgpu::ShaderStages::VERTEX,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
+                    has_dynamic_offset: true,
                     min_binding_size: wgpu::BufferSize::new(64),
                 },
                 count: None,
@@ -141,16 +141,27 @@ impl Renderer {
             }],
             label: None,
         });
-        let w_buffer = device.create_buffer_init(&BufferInitDescriptor {
+        let single_uniform_size = size_of::<Mat4>() as wgpu::BufferAddress;
+        let uniform_alignment = {
+            let alignment =
+                device.limits().min_uniform_buffer_offset_alignment as wgpu::BufferAddress;
+            align_to(single_uniform_size, alignment)
+        };
+        let w_buffer = device.create_buffer(&BufferDescriptor {
             label: Some("Model Buffer"),
-            contents: bytemuck::cast_slice(Mat4::IDENTITY.as_ref()),
+            size: MAX_ENTITY as wgpu::BufferAddress * uniform_alignment,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
         });
         let bind_group_node = device.create_bind_group(&BindGroupDescriptor {
             layout: &bind_group_layout_node,
             entries: &[wgpu::BindGroupEntry {
                 binding: 0,
-                resource: w_buffer.as_entire_binding(),
+                resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                    buffer: &w_buffer,
+                    offset: 0,
+                    size: wgpu::BufferSize::new(single_uniform_size),
+                }),
             }],
             label: None,
         });
@@ -190,7 +201,9 @@ impl Renderer {
         let mut encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        let mut nodes = Vec::new();
         {
+            nodes.clear();
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -204,16 +217,39 @@ impl Renderer {
                 depth_stencil_attachment: None,
             });
             rpass.set_pipeline(&self.render_pipeline);
-            rpass.set_bind_group(0, &self.bind_group_camera, &[]);
-            rpass.set_bind_group(1, &self.bind_group_node, &[]);
+            rpass.set_bind_group(1, &self.bind_group_camera, &[]);
             let mut q = Vec::new();
-            q.push(&self.root);
-            while let Some(node) = q.pop() {
-                if let Some(visual) = &node.visual {
+            for node in self.root.children.iter() {
+                let transform_mx = node.transform.lock().unwrap().calculate();
+                q.push((node.clone(), transform_mx));
+            }
+            while let Some((node, transform_mx)) = q.pop() {
+                if node.visual.is_some() {
+                    nodes.push((node.clone(), transform_mx));
+                }
+                for child in node.children.iter() {
+                    let transform_mx = transform_mx * child.transform.lock().unwrap().calculate();
+                    q.push((child.clone(), transform_mx));
+                }
+            }
+            let uniform_alignment = {
+                let single_uniform_size = size_of::<Mat4>() as wgpu::BufferAddress;
+                let alignment =
+                    self.device.limits().min_uniform_buffer_offset_alignment as wgpu::BufferAddress;
+                align_to(single_uniform_size, alignment)
+            };
+            for (i, (ref node, transform)) in nodes.iter().enumerate() {
+                if let Some(ref visual) = node.visual {
+                    let offset = (uniform_alignment * i as u64) as wgpu::BufferAddress;
                     self.queue.write_buffer(
                         &self.w_buffer,
+                        offset,
+                        bytemuck::cast_slice(transform.as_ref()),
+                    );
+                    rpass.set_bind_group(
                         0,
-                        bytemuck::cast_slice(node.transform.lock().unwrap().calculate().as_ref()),
+                        &self.bind_group_node,
+                        &[offset as wgpu::DynamicOffset],
                     );
                     rpass.set_index_buffer(
                         visual.geometry.index_buffer.slice(..),
@@ -222,9 +258,6 @@ impl Renderer {
                     rpass.set_vertex_buffer(0, visual.geometry.vertex_buffer.slice(..));
                     let n = visual.geometry.indices.len() as u32;
                     rpass.draw_indexed(0..n, 0, 0..1);
-                }
-                for child in node.children.iter() {
-                    q.push(child);
                 }
             }
         }

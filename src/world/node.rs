@@ -4,8 +4,8 @@ use glam::{f32::Quat, Mat4, Vec3};
 use std::sync::{Arc, Mutex};
 
 pub struct NodeVisual {
-    pub geometry: Geometry,
-    pub shader: Shader,
+    pub geometry: Arc<Geometry>,
+    pub shader: Arc<Shader>,
 }
 
 pub struct NodeTransform {
@@ -17,7 +17,7 @@ pub struct NodeTransform {
 pub struct Node {
     pub transform: Arc<Mutex<NodeTransform>>,
     pub visual: Option<NodeVisual>,
-    pub children: Vec<Node>,
+    pub children: Vec<Arc<Node>>,
 }
 
 impl NodeTransform {
@@ -39,7 +39,7 @@ impl Node {
             children: Vec::new(),
         }
     }
-    pub fn new(geometry: Geometry, shader: Shader) -> Self {
+    pub fn new(geometry: Arc<Geometry>, shader: Arc<Shader>) -> Self {
         let transform = NodeTransform {
             translation: Vec3::ZERO,
             rotation: Quat::IDENTITY,
@@ -51,7 +51,7 @@ impl Node {
             children: Vec::new(),
         }
     }
-    pub fn add_child(&mut self, node: Node) {
+    pub fn add_child(&mut self, node: Arc<Node>) {
         self.children.push(node);
     }
 }
