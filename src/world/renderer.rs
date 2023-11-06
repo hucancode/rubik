@@ -11,7 +11,7 @@ use wgpu::{
     RenderPipelineDescriptor, Surface, SurfaceConfiguration,
 };
 use winit::window::Window;
-const MAX_ENTITY: u64 = 10;
+const MAX_ENTITY: u64 = 100000;
 pub struct Renderer {
     pub camera: Camera,
     pub root: Node,
@@ -20,6 +20,7 @@ pub struct Renderer {
     pub device: Device,
     queue: Queue,
     render_pipeline: RenderPipeline,
+    depth_texture_view: wgpu::TextureView,
     bind_group_camera: BindGroup,
     bind_group_node: BindGroup,
     vp_buffer: Buffer,
@@ -103,6 +104,23 @@ impl Renderer {
 
         let shader = Shader::new(&device, include_str!("../shader/shader.wgsl"));
 
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            size: wgpu::Extent3d {
+                width: config.width,
+                height: config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            label: None,
+            view_formats: &[],
+        });
+
+        let depth_texture_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
@@ -117,10 +135,17 @@ impl Renderer {
                 targets: &[Some(swapchain_format.into())],
             }),
             primitive: wgpu::PrimitiveState {
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
                 ..Default::default()
             },
-            depth_stencil: None,
+            depth_stencil: Some(wgpu::DepthStencilState {
+                format: wgpu::TextureFormat::Depth32Float,
+                depth_write_enabled: true,
+                depth_compare: wgpu::CompareFunction::Less,
+                stencil: wgpu::StencilState::default(),
+                bias: wgpu::DepthBiasState::default(),
+            }),
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
         });
@@ -173,6 +198,7 @@ impl Renderer {
             device,
             queue,
             render_pipeline,
+            depth_texture_view,
             bind_group_node,
             bind_group_camera,
             vp_buffer,
@@ -210,11 +236,25 @@ impl Renderer {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                        store: true,
+                        load: wgpu::LoadOp::Clear(wgpu::Color {
+                            r: 0.0666666,
+                            g: 0.0666666,
+                            b: 0.1058823,
+                            a: 1.0,
+                        }),
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
-                depth_stencil_attachment: None,
+                depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                    view: &self.depth_texture_view,
+                    depth_ops: Some(wgpu::Operations {
+                        load: wgpu::LoadOp::Clear(1.0),
+                        store: wgpu::StoreOp::Discard,
+                    }),
+                    stencil_ops: None,
+                }),
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
             rpass.set_pipeline(&self.render_pipeline);
             rpass.set_bind_group(1, &self.bind_group_camera, &[]);

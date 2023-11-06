@@ -14,30 +14,43 @@ use winit::{
 };
 use world::Node;
 
+const CUBE_SIZE: f32 = 2.0;
+const CUBE_MARGIN: f32 = 0.15;
 const ROTATE_CYCLE: u128 = 5000;
 const MAX_FPS: u64 = 60;
 const TARGET_FRAME_TIME: Duration = Duration::from_millis(1000 / MAX_FPS);
 
 pub async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut renderer = world::Renderer::new(&window).await;
-    let cube_mesh = Arc::new(Geometry::new_cube(0x0077ff, &renderer.device));
+    let cube_mesh = Arc::new(Geometry::new_cube(0x1e1e2eff, &renderer.device));
     let rubik_mesh = Arc::new(Geometry::new_rubik_piece(&renderer.device));
     let shader = Arc::new(Shader::new(
         &renderer.device,
         include_str!("shader/shader.wgsl"),
     ));
-    let rubik = Node::new(rubik_mesh, shader.clone());
-    let cube = Node::new(cube_mesh, shader);
+    let d = CUBE_SIZE + CUBE_MARGIN;
+    for x in -1..=1 {
+        for y in -1..=1 {
+            for z in -1..=1 {
+                let rubik = Node::new(rubik_mesh.clone(), shader.clone());
+                let transform = rubik.transform.clone();
+                let mut transform = transform.lock().unwrap();
+
+                transform.translation = glam::Vec3::new(d * x as f32, d * y as f32, d * z as f32);
+                renderer.root.add_child(Arc::new(rubik));
+            }
+        }
+    }
+    let rubik = Node::new(cube_mesh, shader.clone());
     let transform = rubik.transform.clone();
     renderer.root.add_child(Arc::new(rubik));
-    renderer.root.add_child(Arc::new(cube));
     let app_start_time = Instant::now();
     let update = move || {
         let time = app_start_time.elapsed().as_millis();
         let rotation = 2.0 * 3.14 * 0.001 * (time % ROTATE_CYCLE) as f32;
         let mut transform = transform.lock().unwrap();
         transform.rotation = glam::Quat::from_rotation_z(rotation);
-        let z = (time as f64 / 1000.0).sin() as f32;
+        let z = 4.0 + (time as f64 / 1000.0).sin() as f32;
         transform.translation = glam::Vec3::new(0.0, 0.0, z);
     };
     let mut last_update_time = Instant::now();
