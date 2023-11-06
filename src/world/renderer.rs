@@ -214,6 +214,23 @@ impl Renderer {
         let mvp_ref: &[f32; 16] = mvp.as_ref();
         self.queue
             .write_buffer(&self.vp_buffer, 0, bytemuck::cast_slice(mvp_ref));
+        let depth_texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            size: wgpu::Extent3d {
+                width: self.config.width,
+                height: self.config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            label: None,
+            view_formats: &[],
+        });
+        self.depth_texture_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        
+
     }
 
     pub fn draw(&self) {

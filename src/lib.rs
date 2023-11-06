@@ -35,7 +35,6 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
                 let rubik = Node::new(rubik_mesh.clone(), shader.clone());
                 let transform = rubik.transform.clone();
                 let mut transform = transform.lock().unwrap();
-
                 transform.translation = glam::Vec3::new(d * x as f32, d * y as f32, d * z as f32);
                 renderer.root.add_child(Arc::new(rubik));
             }
