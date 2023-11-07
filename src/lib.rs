@@ -44,7 +44,7 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         row_transforms.push(row.transform.clone());
         renderer.root.add_child(Arc::new(row));
     }
-    let rubik = Node::new(cube_mesh, shader.clone());
+    let rubik = Node::new(cube_mesh.clone(), shader.clone());
     let transform = rubik.transform.clone();
     renderer.root.add_child(Arc::new(rubik));
     let app_start_time = Instant::now();
