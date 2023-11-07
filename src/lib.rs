@@ -59,8 +59,8 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         transform.translation = glam::Vec3::new(0.0, 0.0, z);
         for (i,transform) in row_transforms.iter().enumerate() {
             let mut transform = transform.lock().unwrap();
-            let alpha = ((time as f64)*0.001 + (i as f64)*0.2).sin();
-            transform.rotation = glam::Quat::from_rotation_z(alpha as f32);
+            let alpha = PI*(1.0+((time as f64)*0.0007 + (i as f64)*0.08).sin() as f32);
+            transform.rotation = glam::Quat::from_rotation_z(alpha);
         }
     };
     let mut last_update_time = Instant::now();
