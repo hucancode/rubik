@@ -228,9 +228,8 @@ impl Renderer {
             label: None,
             view_formats: &[],
         });
-        self.depth_texture_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        
-
+        self.depth_texture_view =
+            depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
     }
 
     pub fn draw(&self) {

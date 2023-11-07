@@ -50,16 +50,16 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
     let app_start_time = Instant::now();
     let update = move || {
         let time = app_start_time.elapsed().as_millis();
-        let rx = PI*2.0*((time as f64)*0.00042).sin() as f32;
-        let ry = PI*2.0*((time as f64)*0.00011).sin() as f32;
-        let rz = PI*2.0*((time as f64)*0.00027).sin() as f32;
+        let rx = PI * 2.0 * ((time as f64) * 0.00042).sin() as f32;
+        let ry = PI * 2.0 * ((time as f64) * 0.00011).sin() as f32;
+        let rz = PI * 2.0 * ((time as f64) * 0.00027).sin() as f32;
         let mut transform = transform.lock().unwrap();
-        transform.rotation = glam::Quat::from_euler(glam::EulerRot::XYZ,rx,ry,rz);
+        transform.rotation = glam::Quat::from_euler(glam::EulerRot::XYZ, rx, ry, rz);
         let z = 4.0 + (time as f64 / 1000.0).sin() as f32;
         transform.translation = glam::Vec3::new(0.0, 0.0, z);
-        for (i,transform) in row_transforms.iter().enumerate() {
+        for (i, transform) in row_transforms.iter().enumerate() {
             let mut transform = transform.lock().unwrap();
-            let alpha = PI*(1.0+((time as f64)*0.0007 + (i as f64)*0.08).sin() as f32);
+            let alpha = PI * (1.0 + ((time as f64) * 0.0007 + (i as f64) * 0.08).sin() as f32);
             transform.rotation = glam::Quat::from_rotation_z(alpha);
         }
     };
