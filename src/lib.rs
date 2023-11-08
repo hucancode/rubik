@@ -31,10 +31,10 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
     let d = CUBE_SIZE + CUBE_MARGIN;
     let mut row_transforms = Vec::new();
     for z in -1..=1 {
-        let mut row = Node::new_empty();
+        let mut row = Node::new_group();
         for y in -1..=1 {
             for x in -1..=1 {
-                let rubik = Node::new(rubik_mesh.clone(), shader.clone());
+                let rubik = Node::new_entity(rubik_mesh.clone(), shader.clone());
                 let transform = rubik.transform.clone();
                 let mut transform = transform.lock().unwrap();
                 transform.translation = glam::Vec3::new(d * x as f32, d * y as f32, d * z as f32);
@@ -44,9 +44,16 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         row_transforms.push(row.transform.clone());
         renderer.root.add_child(Arc::new(row));
     }
-    let rubik = Node::new(cube_mesh.clone(), shader.clone());
-    let transform = rubik.transform.clone();
-    renderer.root.add_child(Arc::new(rubik));
+    let cube = Node::new_entity(cube_mesh.clone(), shader.clone());
+    let mut light = Node::new_light(wgpu::Color {
+        r: 1.0,
+        g: 0.5,
+        b: 0.0,
+        a: 1.0,
+    });
+    light.add_child(Arc::new(cube));
+    let transform = light.transform.clone();
+    renderer.root.add_child(Arc::new(light));
     let app_start_time = Instant::now();
     let update = move || {
         let time = app_start_time.elapsed().as_millis();

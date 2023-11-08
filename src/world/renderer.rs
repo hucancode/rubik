@@ -1,8 +1,11 @@
 use crate::geometry::Vertex;
 use crate::shader::Shader;
+use crate::world::node;
 use crate::world::Camera;
+use crate::world::Light;
 use crate::world::Node;
 use glam::Mat4;
+use std::cmp::max;
 use std::mem::size_of;
 use wgpu::util::{align_to, BufferInitDescriptor, DeviceExt};
 use wgpu::{
@@ -12,6 +15,13 @@ use wgpu::{
 };
 use winit::window::Window;
 const MAX_ENTITY: u64 = 100000;
+const MAX_LIGHT: u64 = 10;
+const CLEAR_COLOR: wgpu::Color = wgpu::Color {
+    r: 0.06666666666,
+    g: 0.06666666666,
+    b: 0.10588235294,
+    a: 1.0,
+};
 pub struct Renderer {
     pub camera: Camera,
     pub root: Node,
@@ -25,6 +35,7 @@ pub struct Renderer {
     bind_group_node: BindGroup,
     vp_buffer: Buffer,
     w_buffer: Buffer,
+    light_buffer: Buffer,
 }
 
 impl Renderer {
@@ -71,16 +82,28 @@ impl Renderer {
         let bind_group_layout_camera =
             device.create_bind_group_layout(&BindGroupLayoutDescriptor {
                 label: None,
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0, // view projection
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: wgpu::BufferSize::new(64),
+                entries: &[
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 0, // view projection
+                        visibility: wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: wgpu::BufferSize::new(64),
+                        },
+                        count: None,
                     },
-                    count: None,
-                }],
+                    BindGroupLayoutEntry {
+                        binding: 1, // light
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: wgpu::BufferSize::new(0),
+                        },
+                        count: None,
+                    },
+                ],
             });
         let bind_group_layout_node = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: None,
@@ -158,23 +181,38 @@ impl Renderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
 
+        let light_uniform_size = size_of::<Light>() as wgpu::BufferAddress;
+        let light_buffer = device.create_buffer(&BufferDescriptor {
+            label: Some("Light Buffer"),
+            size: MAX_LIGHT as wgpu::BufferAddress * light_uniform_size,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+
         let bind_group_camera = device.create_bind_group(&BindGroupDescriptor {
             layout: &bind_group_layout_camera,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: vp_buffer.as_entire_binding(),
-            }],
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: vp_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: light_buffer.as_entire_binding(),
+                },
+            ],
             label: None,
         });
-        let single_uniform_size = size_of::<Mat4>() as wgpu::BufferAddress;
-        let uniform_alignment = {
+
+        let node_uniform_size = size_of::<Mat4>() as wgpu::BufferAddress;
+        let node_uniform_aligned = {
             let alignment =
                 device.limits().min_uniform_buffer_offset_alignment as wgpu::BufferAddress;
-            align_to(single_uniform_size, alignment)
+            align_to(node_uniform_size, alignment)
         };
         let w_buffer = device.create_buffer(&BufferDescriptor {
             label: Some("Model Buffer"),
-            size: MAX_ENTITY as wgpu::BufferAddress * uniform_alignment,
+            size: MAX_ENTITY as wgpu::BufferAddress * node_uniform_aligned,
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -185,14 +223,14 @@ impl Renderer {
                 resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
                     buffer: &w_buffer,
                     offset: 0,
-                    size: wgpu::BufferSize::new(single_uniform_size),
+                    size: wgpu::BufferSize::new(node_uniform_size),
                 }),
             }],
             label: None,
         });
         Self {
             camera: Camera::new(),
-            root: Node::new_empty(),
+            root: Node::new_group(),
             config,
             surface,
             device,
@@ -203,12 +241,13 @@ impl Renderer {
             bind_group_camera,
             vp_buffer,
             w_buffer,
+            light_buffer,
         }
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
-        self.config.width = width;
-        self.config.height = height;
+        self.config.width = max(1, width);
+        self.config.height = max(1, height);
         self.surface.configure(&self.device, &self.config);
         let mvp = Camera::make_vp_matrix(self.config.width as f32 / self.config.height as f32);
         let mvp_ref: &[f32; 16] = mvp.as_ref();
@@ -244,20 +283,17 @@ impl Renderer {
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         let mut nodes = Vec::new();
+        let mut lights = Vec::new();
         {
             nodes.clear();
+            lights.clear();
             let mut rpass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: None,
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
                     ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Clear(wgpu::Color {
-                            r: 0.06666666666,
-                            g: 0.06666666666,
-                            b: 0.10588235294,
-                            a: 1.0,
-                        }),
+                        load: wgpu::LoadOp::Clear(CLEAR_COLOR),
                         store: wgpu::StoreOp::Store,
                     },
                 })],
@@ -280,41 +316,54 @@ impl Renderer {
                 q.push((node.clone(), transform_mx));
             }
             while let Some((node, transform_mx)) = q.pop() {
-                if node.visual.is_some() {
-                    nodes.push((node.clone(), transform_mx));
+                match &node.variant {
+                    node::Variant::Entity(geometry, shader) => {
+                        nodes.push((geometry.clone(), shader.clone(), transform_mx));
+                    }
+                    node::Variant::Light(color) => {
+                        lights.push((color.clone(), transform_mx));
+                    }
+                    _ => {}
                 }
                 for child in node.children.iter() {
                     let transform_mx = transform_mx * child.transform.lock().unwrap().calculate();
                     q.push((child.clone(), transform_mx));
                 }
             }
-            let uniform_alignment = {
-                let single_uniform_size = size_of::<Mat4>() as wgpu::BufferAddress;
+            let light_uniform_size = size_of::<Light>() as wgpu::BufferAddress;
+            for (i, (color, transform)) in lights.iter().enumerate() {
+                let offset = (light_uniform_size * i as u64) as wgpu::BufferAddress;
+                let position = *transform * glam::Vec4::ZERO;
+                let trunk = Light {
+                    position: [position.x, position.y, position.z, position.w],
+                    color: [
+                        color.r as f32,
+                        color.g as f32,
+                        color.b as f32,
+                        color.a as f32,
+                    ],
+                };
+                self.queue
+                    .write_buffer(&self.light_buffer, offset, bytemuck::bytes_of(&trunk));
+            }
+            let node_uniform_aligned = {
+                let node_uniform_size = size_of::<Mat4>() as wgpu::BufferAddress;
                 let alignment =
                     self.device.limits().min_uniform_buffer_offset_alignment as wgpu::BufferAddress;
-                align_to(single_uniform_size, alignment)
+                align_to(node_uniform_size, alignment)
             };
-            for (i, (ref node, transform)) in nodes.iter().enumerate() {
-                if let Some(ref visual) = node.visual {
-                    let offset = (uniform_alignment * i as u64) as wgpu::BufferAddress;
-                    self.queue.write_buffer(
-                        &self.w_buffer,
-                        offset,
-                        bytemuck::cast_slice(transform.as_ref()),
-                    );
-                    rpass.set_bind_group(
-                        0,
-                        &self.bind_group_node,
-                        &[offset as wgpu::DynamicOffset],
-                    );
-                    rpass.set_index_buffer(
-                        visual.geometry.index_buffer.slice(..),
-                        wgpu::IndexFormat::Uint16,
-                    );
-                    rpass.set_vertex_buffer(0, visual.geometry.vertex_buffer.slice(..));
-                    let n = visual.geometry.indices.len() as u32;
-                    rpass.draw_indexed(0..n, 0, 0..1);
-                }
+            for (i, (geometry, _shader, transform)) in nodes.iter().enumerate() {
+                let offset = (node_uniform_aligned * i as u64) as wgpu::BufferAddress;
+                self.queue.write_buffer(
+                    &self.w_buffer,
+                    offset,
+                    bytemuck::cast_slice(transform.as_ref()),
+                );
+                rpass.set_bind_group(0, &self.bind_group_node, &[offset as wgpu::DynamicOffset]);
+                rpass.set_index_buffer(geometry.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                rpass.set_vertex_buffer(0, geometry.vertex_buffer.slice(..));
+                let n = geometry.indices.len() as u32;
+                rpass.draw_indexed(0..n, 0, 0..1);
             }
         }
         self.queue.submit(Some(encoder.finish()));
