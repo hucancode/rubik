@@ -65,7 +65,8 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         let x = 4.0 * (time as f64 / 1700.0).sin() as f32;
         let y = 4.0 * (time as f64 / 1300.0).sin() as f32;
         let z = 4.0 * (time as f64 / 700.0).sin() as f32;
-        light.translate(x, y, z);
+        let v = glam::Vec4::new(x, y, z, 1.0).normalize() * 10.0;
+        light.translate(v.x, v.y, v.z);
         for (i, row) in rows.iter_mut().enumerate() {
             let alpha = PI * (1.0 + ((time as f64) * 0.0007 + (i as f64) * 0.08).sin() as f32);
             row.rotate_z(alpha);
