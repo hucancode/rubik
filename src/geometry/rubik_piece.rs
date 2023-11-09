@@ -12,35 +12,35 @@ impl Geometry {
         let orange = 0xfe640bff; // back - orange
         let vertex_data = [
             // top (0, 0, 1)
-            Vertex::new([-1.0, -1.0, 1.0], yellow),
-            Vertex::new([1.0, -1.0, 1.0], yellow),
-            Vertex::new([1.0, 1.0, 1.0], yellow),
-            Vertex::new([-1.0, 1.0, 1.0], yellow),
+            Vertex::new([-1.0, -1.0, 1.0], [0.0, 0.0, 1.0], yellow),
+            Vertex::new([1.0, -1.0, 1.0], [0.0, 0.0, 1.0], yellow),
+            Vertex::new([1.0, 1.0, 1.0], [0.0, 0.0, 1.0], yellow),
+            Vertex::new([-1.0, 1.0, 1.0], [0.0, 0.0, 1.0], yellow),
             // bottom (0, 0, -1.0)
-            Vertex::new([-1.0, 1.0, -1.0], white),
-            Vertex::new([1.0, 1.0, -1.0], white),
-            Vertex::new([1.0, -1.0, -1.0], white),
-            Vertex::new([-1.0, -1.0, -1.0], white),
+            Vertex::new([-1.0, 1.0, -1.0], [0.0, 0.0, -1.0], white),
+            Vertex::new([1.0, 1.0, -1.0], [0.0, 0.0, -1.0], white),
+            Vertex::new([1.0, -1.0, -1.0], [0.0, 0.0, -1.0], white),
+            Vertex::new([-1.0, -1.0, -1.0], [0.0, 0.0, -1.0], white),
             // right (1, 0, 0)
-            Vertex::new([1.0, -1.0, -1.0], green),
-            Vertex::new([1.0, 1.0, -1.0], green),
-            Vertex::new([1.0, 1.0, 1.0], green),
-            Vertex::new([1.0, -1.0, 1.0], green),
+            Vertex::new([1.0, -1.0, -1.0], [1.0, 0.0, 0.0], green),
+            Vertex::new([1.0, 1.0, -1.0], [1.0, 0.0, 0.0], green),
+            Vertex::new([1.0, 1.0, 1.0], [1.0, 0.0, 0.0], green),
+            Vertex::new([1.0, -1.0, 1.0], [1.0, 0.0, 0.0], green),
             // left (-1, 0, 0)
-            Vertex::new([-1.0, -1.0, 1.0], purple),
-            Vertex::new([-1.0, 1.0, 1.0], purple),
-            Vertex::new([-1.0, 1.0, -1.0], purple),
-            Vertex::new([-1.0, -1.0, -1.0], purple),
+            Vertex::new([-1.0, -1.0, 1.0], [-1.0, 0.0, 0.0], purple),
+            Vertex::new([-1.0, 1.0, 1.0], [-1.0, 0.0, 0.0], purple),
+            Vertex::new([-1.0, 1.0, -1.0], [-1.0, 0.0, 0.0], purple),
+            Vertex::new([-1.0, -1.0, -1.0], [-1.0, 0.0, 0.0], purple),
             // front (0, 1.0, 0)
-            Vertex::new([1.0, 1.0, -1.0], red),
-            Vertex::new([-1.0, 1.0, -1.0], red),
-            Vertex::new([-1.0, 1.0, 1.0], red),
-            Vertex::new([1.0, 1.0, 1.0], red),
+            Vertex::new([1.0, 1.0, -1.0], [0.0, 1.0, 0.0], red),
+            Vertex::new([-1.0, 1.0, -1.0], [0.0, 1.0, 0.0], red),
+            Vertex::new([-1.0, 1.0, 1.0], [0.0, 1.0, 0.0], red),
+            Vertex::new([1.0, 1.0, 1.0], [0.0, 1.0, 0.0], red),
             // back (0, -1.0, 0)
-            Vertex::new([1.0, -1.0, 1.0], orange),
-            Vertex::new([-1.0, -1.0, 1.0], orange),
-            Vertex::new([-1.0, -1.0, -1.0], orange),
-            Vertex::new([1.0, -1.0, -1.0], orange),
+            Vertex::new([1.0, -1.0, 1.0], [0.0, -1.0, 0.0], orange),
+            Vertex::new([-1.0, -1.0, 1.0], [0.0, -1.0, 0.0], orange),
+            Vertex::new([-1.0, -1.0, -1.0], [0.0, -1.0, 0.0], orange),
+            Vertex::new([1.0, -1.0, -1.0], [0.0, -1.0, 0.0], orange),
         ];
         let index_data: &[u16] = &[
             0, 1, 2, 2, 3, 0, // top

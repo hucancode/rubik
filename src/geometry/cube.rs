@@ -6,35 +6,35 @@ impl Geometry {
     pub fn new_cube(col: u32, device: &Device) -> Self {
         let vertex_data = [
             // top (0, 0, 1)
-            Vertex::new([-1.0, -1.0, 1.0], col),
-            Vertex::new([1.0, -1.0, 1.0], col),
-            Vertex::new([1.0, 1.0, 1.0], col),
-            Vertex::new([-1.0, 1.0, 1.0], col),
+            Vertex::new([-1.0, -1.0, 1.0], [0.0, 0.0, 1.0], col),
+            Vertex::new([1.0, -1.0, 1.0], [0.0, 0.0, 1.0], col),
+            Vertex::new([1.0, 1.0, 1.0], [0.0, 0.0, 1.0], col),
+            Vertex::new([-1.0, 1.0, 1.0], [0.0, 0.0, 1.0], col),
             // bottom (0, 0, -1.0)
-            Vertex::new([-1.0, 1.0, -1.0], col),
-            Vertex::new([1.0, 1.0, -1.0], col),
-            Vertex::new([1.0, -1.0, -1.0], col),
-            Vertex::new([-1.0, -1.0, -1.0], col),
+            Vertex::new([-1.0, 1.0, -1.0], [0.0, 0.0, -1.0], col),
+            Vertex::new([1.0, 1.0, -1.0], [0.0, 0.0, -1.0], col),
+            Vertex::new([1.0, -1.0, -1.0], [0.0, 0.0, -1.0], col),
+            Vertex::new([-1.0, -1.0, -1.0], [0.0, 0.0, -1.0], col),
             // right (1, 0, 0)
-            Vertex::new([1.0, -1.0, -1.0], col),
-            Vertex::new([1.0, 1.0, -1.0], col),
-            Vertex::new([1.0, 1.0, 1.0], col),
-            Vertex::new([1.0, -1.0, 1.0], col),
+            Vertex::new([1.0, -1.0, -1.0], [1.0, 0.0, 0.0], col),
+            Vertex::new([1.0, 1.0, -1.0], [1.0, 0.0, 0.0], col),
+            Vertex::new([1.0, 1.0, 1.0], [1.0, 0.0, 0.0], col),
+            Vertex::new([1.0, -1.0, 1.0], [1.0, 0.0, 0.0], col),
             // left (-1, 0, 0)
-            Vertex::new([-1.0, -1.0, 1.0], col),
-            Vertex::new([-1.0, 1.0, 1.0], col),
-            Vertex::new([-1.0, 1.0, -1.0], col),
-            Vertex::new([-1.0, -1.0, -1.0], col),
+            Vertex::new([-1.0, -1.0, 1.0], [-1.0, 0.0, 0.0], col),
+            Vertex::new([-1.0, 1.0, 1.0], [-1.0, 0.0, 0.0], col),
+            Vertex::new([-1.0, 1.0, -1.0], [-1.0, 0.0, 0.0], col),
+            Vertex::new([-1.0, -1.0, -1.0], [-1.0, 0.0, 0.0], col),
             // front (0, 1.0, 0)
-            Vertex::new([1.0, 1.0, -1.0], col),
-            Vertex::new([-1.0, 1.0, -1.0], col),
-            Vertex::new([-1.0, 1.0, 1.0], col),
-            Vertex::new([1.0, 1.0, 1.0], col),
+            Vertex::new([1.0, 1.0, -1.0], [0.0, 1.0, 0.0], col),
+            Vertex::new([-1.0, 1.0, -1.0], [0.0, 1.0, 0.0], col),
+            Vertex::new([-1.0, 1.0, 1.0], [0.0, 1.0, 0.0], col),
+            Vertex::new([1.0, 1.0, 1.0], [0.0, 1.0, 0.0], col),
             // back (0, -1.0, 0)
-            Vertex::new([1.0, -1.0, 1.0], col),
-            Vertex::new([-1.0, -1.0, 1.0], col),
-            Vertex::new([-1.0, -1.0, -1.0], col),
-            Vertex::new([1.0, -1.0, -1.0], col),
+            Vertex::new([1.0, -1.0, 1.0], [0.0, -1.0, 0.0], col),
+            Vertex::new([-1.0, -1.0, 1.0], [0.0, -1.0, 0.0], col),
+            Vertex::new([-1.0, -1.0, -1.0], [0.0, -1.0, 0.0], col),
+            Vertex::new([1.0, -1.0, -1.0], [0.0, -1.0, 0.0], col),
         ];
         let index_data: &[u16] = &[
             0, 1, 2, 2, 3, 0, // top

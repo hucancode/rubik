@@ -1,7 +1,7 @@
 use crate::geometry::Vertex;
 use crate::shader::Shader;
 use crate::world::{node, Camera, Light, Node, NodeRef};
-use glam::Mat4;
+use glam::{Mat4, Vec4};
 use std::cmp::max;
 use std::mem::size_of;
 use wgpu::util::{align_to, BufferInitDescriptor, DeviceExt};
@@ -282,7 +282,7 @@ impl Renderer {
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         let mut nodes = Vec::new();
-        let mut lights = Vec::new();
+        let mut lights: Vec<(wgpu::Color, f32, Mat4)> = Vec::new();
         {
             nodes.clear();
             lights.clear();
@@ -310,15 +310,15 @@ impl Renderer {
             rpass.set_pipeline(&self.render_pipeline);
             rpass.set_bind_group(1, &self.bind_group_camera, &[]);
             let mut q = Vec::new();
-            q.push((self.root.clone(), glam::Mat4::IDENTITY));
+            q.push((self.root.clone(), Mat4::IDENTITY));
             while let Some((node, transform_mx)) = q.pop() {
                 let node = node.lock().unwrap();
                 match &node.variant {
                     node::Variant::Entity(geometry, shader) => {
                         nodes.push((geometry.clone(), shader.clone(), transform_mx));
                     }
-                    node::Variant::Light(color) => {
-                        lights.push((color.clone(), transform_mx));
+                    node::Variant::Light(color, radius) => {
+                        lights.push((*color, *radius, transform_mx));
                     }
                     _ => {}
                 }
@@ -328,11 +328,12 @@ impl Renderer {
                 }
             }
             let light_uniform_size = size_of::<Light>() as wgpu::BufferAddress;
-            for (i, (color, transform)) in lights.iter().enumerate() {
+            for (i, (color, radius, transform)) in lights.into_iter().enumerate() {
                 let offset = (light_uniform_size * i as u64) as wgpu::BufferAddress;
-                let position = *transform * glam::Vec4::ZERO;
+                let position = transform * Vec4::W;
                 let trunk = Light {
-                    position: [position.x, position.y, position.z, position.w],
+                    position: [position.x, position.y, position.z],
+                    radius: radius,
                     color: [
                         color.r as f32,
                         color.g as f32,

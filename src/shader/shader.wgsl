@@ -1,15 +1,19 @@
 const MAX_LIGHT = 10;
 struct VertexInput {
     @location(0) position: vec4<f32>,
-    @location(1) color: vec4<f32>,
+    @location(1) normal: vec4<f32>,
+    @location(2) color: vec4<f32>,
 };
 struct VertexOutput {
     @location(0) color: vec4<f32>,
+    @location(1) normal: vec4<f32>,
+    @location(2) world_position: vec4<f32>,
     @builtin(position) position: vec4<f32>,
 };
 struct Light {
-    @location(0) position: vec4<f32>,
-    @location(1) color: vec4<f32>,
+    @location(0) position: vec3<f32>,
+    @location(1) radius: f32,
+    @location(2) color: vec4<f32>,
 };
 
 @group(0) @binding(0)
@@ -21,7 +25,9 @@ var<uniform> view_proj: mat4x4<f32>;
 fn vs_main(input: VertexInput) -> VertexOutput {
     var result: VertexOutput;
     result.color = input.color;
-    result.position = view_proj * world * input.position;
+    result.world_position = world * input.position;
+    result.position = view_proj * result.world_position;
+    result.normal = input.normal;
     return result;
 }
 
@@ -30,5 +36,11 @@ var<uniform> lights: array<Light, MAX_LIGHT>;
 
 @fragment
 fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
-    return vertex.color;
+    let light = lights[0];
+    let light_pos = vec4(light.position,1.0); 
+    let light_strength = max(0.0, light.radius - distance(light_pos, vertex.world_position));
+    let light_dir = normalize(light_pos - vertex.world_position);
+    let diffuse_strength = max(dot(vertex.normal, light_dir), 0.0)*light_strength;
+    let diffuse_color = light.color * diffuse_strength;
+    return diffuse_color * vertex.color;
 }
