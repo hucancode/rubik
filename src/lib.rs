@@ -4,6 +4,7 @@ mod world;
 
 use geometry::Geometry;
 use shader::Shader;
+use glam::Vec4;
 use std::f32::consts::PI;
 use std::ops::Add;
 use std::sync::Arc;
@@ -21,7 +22,7 @@ const TARGET_FRAME_TIME: Duration = Duration::from_millis(1000 / MAX_FPS);
 
 pub async fn run(event_loop: EventLoop<()>, window: Window) {
     let mut renderer = world::Renderer::new(&window).await;
-    let cube_mesh = Arc::new(Geometry::new_cube(0x1e1e2eff, &renderer.device));
+    let cube_mesh = Arc::new(Geometry::new_cube(0xcba6f7ff, &renderer.device));
     let rubik_mesh = Arc::new(Geometry::new_rubik_piece(&renderer.device));
     let shader = Arc::new(Shader::new(
         &renderer.device,
@@ -33,17 +34,17 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         let mut row = new_group();
         for y in -1..=1 {
             for x in -1..=1 {
-                let mut rubik = new_entity(rubik_mesh.clone(), shader.clone());
-                row.add_child(rubik.clone());
-                rubik.translate(d * x as f32, d * y as f32, d * z as f32);
+                let mut cube = new_entity(cube_mesh.clone(), shader.clone());
+                row.add_child(cube.clone());
+                cube.translate(d * x as f32, d * y as f32, d * z as f32);
             }
         }
         rows.push(row.clone());
         renderer.root.add_child(row);
     }
-    let mut cube = new_entity(cube_mesh.clone(), shader.clone());
-    cube.scale_uniform(0.5);
-    cube.translate(1.0, 1.0, 1.0);
+    let mut rubik = new_entity(rubik_mesh.clone(), shader.clone());
+    rubik.scale_uniform(0.5);
+    rubik.translate(1.0, 1.0, 1.0);
     let mut light = new_light(
         wgpu::Color {
             r: 1.0,
@@ -53,7 +54,7 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         },
         7.0,
     );
-    light.add_child(cube.clone());
+    light.add_child(rubik.clone());
     renderer.root.add_child(light.clone());
     let app_start_time = Instant::now();
     let mut update = move || {
@@ -61,11 +62,11 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         let rx = PI * 2.0 * ((time as f64) * 0.00042).sin() as f32;
         let ry = PI * 2.0 * ((time as f64) * 0.00011).sin() as f32;
         let rz = PI * 2.0 * ((time as f64) * 0.00027).sin() as f32;
-        cube.rotate(rx, ry, rz);
+        rubik.rotate(rx, ry, rz);
         let x = 4.0 * (time as f64 / 1700.0).sin() as f32;
         let y = 4.0 * (time as f64 / 1300.0).sin() as f32;
         let z = 4.0 * (time as f64 / 700.0).sin() as f32;
-        let v = glam::Vec4::new(x, y, z, 1.0).normalize() * 10.0;
+        let v = Vec4::new(x, y, z, 1.0).normalize() * 10.0;
         light.translate(v.x, v.y, v.z);
         for (i, row) in rows.iter_mut().enumerate() {
             let alpha = PI * (1.0 + ((time as f64) * 0.0007 + (i as f64) * 0.08).sin() as f32);
