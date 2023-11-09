@@ -4,9 +4,11 @@ use crate::world::node;
 use crate::world::Camera;
 use crate::world::Light;
 use crate::world::Node;
+use crate::world::TreeNode;
 use glam::Mat4;
 use std::cmp::max;
 use std::mem::size_of;
+use std::sync::{Arc, Mutex};
 use wgpu::util::{align_to, BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupLayoutDescriptor, BindGroupLayoutEntry, Buffer,
@@ -24,7 +26,7 @@ const CLEAR_COLOR: wgpu::Color = wgpu::Color {
 };
 pub struct Renderer {
     pub camera: Camera,
-    pub root: Node,
+    pub root: Arc<Mutex<Node>>,
     config: SurfaceConfiguration,
     surface: Surface,
     pub device: Device,
@@ -311,11 +313,9 @@ impl Renderer {
             rpass.set_pipeline(&self.render_pipeline);
             rpass.set_bind_group(1, &self.bind_group_camera, &[]);
             let mut q = Vec::new();
-            for node in self.root.children.iter() {
-                let transform_mx = node.transform.lock().unwrap().calculate();
-                q.push((node.clone(), transform_mx));
-            }
+            q.push((self.root.clone(), glam::Mat4::IDENTITY));
             while let Some((node, transform_mx)) = q.pop() {
+                let node = node.lock().unwrap();
                 match &node.variant {
                     node::Variant::Entity(geometry, shader) => {
                         nodes.push((geometry.clone(), shader.clone(), transform_mx));
@@ -326,7 +326,7 @@ impl Renderer {
                     _ => {}
                 }
                 for child in node.children.iter() {
-                    let transform_mx = transform_mx * child.transform.lock().unwrap().calculate();
+                    let transform_mx = transform_mx * child.calculate_transform();
                     q.push((child.clone(), transform_mx));
                 }
             }
