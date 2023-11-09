@@ -38,9 +38,7 @@ var<uniform> lights: array<Light, MAX_LIGHT>;
 fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     let light = lights[0];
     let light_pos = vec4(light.position,1.0); 
-    let light_strength = max(0.0, light.radius - distance(light_pos, vertex.world_position));
     let light_dir = normalize(light_pos - vertex.world_position);
-    let diffuse_strength = max(dot(vertex.normal, light_dir), 0.0)*light_strength;
-    let diffuse_color = light.color * diffuse_strength;
-    return diffuse_color * vertex.color;
+    let diffuse_strength = max(dot(vertex.normal, light_dir), 0.0);
+    return (light.color*0.2 + vertex.color*0.8) * diffuse_strength;
 }

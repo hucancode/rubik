@@ -43,6 +43,7 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
     }
     let mut cube = new_entity(cube_mesh.clone(), shader.clone());
     cube.scale_uniform(0.5);
+    cube.translate(1.0, 1.0, 1.0);
     let mut light = new_light(
         wgpu::Color {
             r: 1.0,
@@ -50,7 +51,7 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
             b: 0.0,
             a: 1.0,
         },
-        10.0,
+        7.0,
     );
     light.add_child(cube.clone());
     renderer.root.add_child(light.clone());
@@ -61,8 +62,10 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         let ry = PI * 2.0 * ((time as f64) * 0.00011).sin() as f32;
         let rz = PI * 2.0 * ((time as f64) * 0.00027).sin() as f32;
         cube.rotate(rx, ry, rz);
-        let z = 10.0 * (time as f64 / 1000.0).sin() as f32;
-        light.translate_z(z);
+        let x = 4.0 * (time as f64 / 1700.0).sin() as f32;
+        let y = 4.0 * (time as f64 / 1300.0).sin() as f32;
+        let z = 4.0 * (time as f64 / 700.0).sin() as f32;
+        light.translate(x, y, z);
         for (i, row) in rows.iter_mut().enumerate() {
             let alpha = PI * (1.0 + ((time as f64) * 0.0007 + (i as f64) * 0.08).sin() as f32);
             row.rotate_z(alpha);
