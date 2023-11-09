@@ -1,14 +1,9 @@
 use crate::geometry::Vertex;
 use crate::shader::Shader;
-use crate::world::node;
-use crate::world::Camera;
-use crate::world::Light;
-use crate::world::Node;
-use crate::world::TreeNode;
+use crate::world::{node, Camera, Light, Node, NodeRef};
 use glam::Mat4;
 use std::cmp::max;
 use std::mem::size_of;
-use std::sync::{Arc, Mutex};
 use wgpu::util::{align_to, BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupLayoutDescriptor, BindGroupLayoutEntry, Buffer,
@@ -16,6 +11,7 @@ use wgpu::{
     RenderPipelineDescriptor, Surface, SurfaceConfiguration,
 };
 use winit::window::Window;
+
 const MAX_ENTITY: u64 = 100000;
 const MAX_LIGHT: u64 = 10;
 const CLEAR_COLOR: wgpu::Color = wgpu::Color {
@@ -24,9 +20,10 @@ const CLEAR_COLOR: wgpu::Color = wgpu::Color {
     b: 0.10588235294,
     a: 1.0,
 };
+
 pub struct Renderer {
     pub camera: Camera,
-    pub root: Arc<Mutex<Node>>,
+    pub root: NodeRef,
     config: SurfaceConfiguration,
     surface: Surface,
     pub device: Device,
@@ -232,7 +229,7 @@ impl Renderer {
         });
         Self {
             camera: Camera::new(),
-            root: Node::new_group(),
+            root: node::new_group(),
             config,
             surface,
             device,

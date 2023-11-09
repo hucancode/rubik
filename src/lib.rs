@@ -13,9 +13,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::Window,
 };
-use world::Node;
-use world::TreeNode;
-
+use world::{new_entity, new_group, new_light, Node};
 const CUBE_SIZE: f32 = 2.0;
 const CUBE_MARGIN: f32 = 0.15;
 const MAX_FPS: u64 = 60;
@@ -32,10 +30,10 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
     let d = CUBE_SIZE + CUBE_MARGIN;
     let mut rows = Vec::new();
     for z in -1..=1 {
-        let mut row = Node::new_group();
+        let mut row = new_group();
         for y in -1..=1 {
             for x in -1..=1 {
-                let mut rubik = Node::new_entity(rubik_mesh.clone(), shader.clone());
+                let mut rubik = new_entity(rubik_mesh.clone(), shader.clone());
                 row.add_child(rubik.clone());
                 rubik.translate(d * x as f32, d * y as f32, d * z as f32);
             }
@@ -43,8 +41,8 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         rows.push(row.clone());
         renderer.root.add_child(row);
     }
-    let cube = Node::new_entity(cube_mesh.clone(), shader.clone());
-    let mut light = Node::new_light(wgpu::Color {
+    let cube = new_entity(cube_mesh.clone(), shader.clone());
+    let mut light = new_light(wgpu::Color {
         r: 1.0,
         g: 0.5,
         b: 0.0,

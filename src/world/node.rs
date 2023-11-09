@@ -1,6 +1,6 @@
 use crate::geometry::Geometry;
 use crate::shader::Shader;
-use glam::{f32::Quat, Mat4, Vec3};
+use glam::{f32::Quat, Mat4, Vec3, EulerRot};
 use std::sync::{Arc, Mutex};
 
 pub enum Variant {
@@ -9,52 +9,49 @@ pub enum Variant {
     Group,
 }
 
-pub struct Node {
+pub type NodeRef = Arc<Mutex<NodeData>>;
+
+pub struct NodeData {
     pub translation: Vec3,
     pub rotation: Quat,
     pub scale: Vec3,
     pub variant: Variant,
-    pub children: Vec<Arc<Mutex<Node>>>,
-    pub parent: Option<Arc<Mutex<Node>>>,
+    pub children: Vec<NodeRef>,
+    pub parent: Option<NodeRef>,
 }
 
-impl Node {
-    pub fn new_group() -> Arc<Mutex<Self>> {
-        let ret = Self {
+impl Default for NodeData {
+    fn default() -> Self {
+        Self {
             translation: Vec3::ZERO,
             rotation: Quat::IDENTITY,
             scale: Vec3::ONE,
             variant: Variant::Group,
             children: Vec::new(),
             parent: None,
-        };
-        Arc::new(Mutex::new(ret))
-    }
-    pub fn new_light(color: wgpu::Color) -> Arc<Mutex<Self>> {
-        let ret = Self {
-            translation: Vec3::ZERO,
-            rotation: Quat::IDENTITY,
-            scale: Vec3::ONE,
-            variant: Variant::Light(color),
-            children: Vec::new(),
-            parent: None,
-        };
-        Arc::new(Mutex::new(ret))
-    }
-    pub fn new_entity(geometry: Arc<Geometry>, shader: Arc<Shader>) -> Arc<Mutex<Self>> {
-        let ret = Self {
-            translation: Vec3::ZERO,
-            rotation: Quat::IDENTITY,
-            scale: Vec3::ONE,
-            variant: Variant::Entity(geometry, shader),
-            children: Vec::new(),
-            parent: None,
-        };
-        Arc::new(Mutex::new(ret))
+        }
     }
 }
 
-pub trait TreeNode {
+pub fn new_group() -> NodeRef {
+    Arc::new(Mutex::new(NodeData::default()))
+}
+
+pub fn new_light(color: wgpu::Color) -> NodeRef {
+    Arc::new(Mutex::new(NodeData {
+        variant: Variant::Light(color),
+        ..Default::default()
+    }))
+}
+
+pub fn new_entity(geometry: Arc<Geometry>, shader: Arc<Shader>) -> NodeRef {
+    Arc::new(Mutex::new(NodeData {
+        variant: Variant::Entity(geometry, shader),
+        ..Default::default()
+    }))
+}
+
+pub trait Node {
     fn translate(&mut self, x: f32, y: f32, z: f32);
     fn translate_x(&mut self, x: f32);
     fn translate_y(&mut self, y: f32);
@@ -71,11 +68,11 @@ pub trait TreeNode {
     fn rotate_y(&mut self, y: f32);
     fn rotate_z(&mut self, z: f32);
     fn calculate_transform(&self) -> Mat4;
-    fn add_child(&mut self, node: Arc<Mutex<Node>>);
+    fn add_child(&mut self, node: NodeRef);
 }
-impl TreeNode for Node {
+impl Node for NodeData {
     fn translate(&mut self, x: f32, y: f32, z: f32) {
-        self.translation = glam::Vec3::new(x, y, z);
+        self.translation = Vec3::new(x, y, z);
     }
     fn translate_x(&mut self, x: f32) {
         self.translate(x, 0.0, 0.0)
@@ -87,7 +84,7 @@ impl TreeNode for Node {
         self.translate(0.0, 0.0, z)
     }
     fn scale(&mut self, x: f32, y: f32, z: f32) {
-        self.scale = glam::Vec3::new(x, y, z);
+        self.scale = Vec3::new(x, y, z);
     }
     fn scale_x(&mut self, x: f32) {
         self.scale(x, 0.0, 0.0)
@@ -102,7 +99,7 @@ impl TreeNode for Node {
         self.scale(v, v, v)
     }
     fn rotate(&mut self, x: f32, y: f32, z: f32) {
-        self.rotation = glam::Quat::from_euler(glam::EulerRot::XYZ, x, y, z);
+        self.rotation = Quat::from_euler(EulerRot::XYZ, x, y, z);
     }
     fn rotate_x(&mut self, x: f32) {
         self.rotate(x, 0.0, 0.0);
@@ -116,11 +113,11 @@ impl TreeNode for Node {
     fn calculate_transform(&self) -> Mat4 {
         Mat4::from_scale_rotation_translation(self.scale, self.rotation, self.translation)
     }
-    fn add_child(&mut self, child: Arc<Mutex<Node>>) {
+    fn add_child(&mut self, child: NodeRef) {
         self.children.push(child);
     }
 }
-impl TreeNode for Arc<Mutex<Node>> {
+impl Node for NodeRef {
     fn translate(&mut self, x: f32, y: f32, z: f32) {
         if let Ok(mut node) = self.lock() {
             node.translate(x, y, z)
@@ -173,7 +170,7 @@ impl TreeNode for Arc<Mutex<Node>> {
             Mat4::IDENTITY
         }
     }
-    fn add_child(&mut self, child: Arc<Mutex<Node>>) {
+    fn add_child(&mut self, child: NodeRef) {
         if let Ok(mut node) = self.lock() {
             if let Ok(mut child_mtx) = child.clone().lock() {
                 node.children.push(child);
