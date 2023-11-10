@@ -23,9 +23,9 @@ use winit::window::Window;
 const MAX_ENTITY: u64 = 100000;
 const MAX_LIGHT: u64 = 10;
 const CLEAR_COLOR: Color = Color {
-    r: 0.06666666666,
-    g: 0.06666666666,
-    b: 0.10588235294,
+    r: 0.00633333333,
+    g: 0.00633333333,
+    b: 0.01388235294,
     a: 1.0,
 };
 
