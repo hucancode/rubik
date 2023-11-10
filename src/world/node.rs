@@ -1,10 +1,10 @@
-use crate::geometry::Geometry;
-use crate::shader::Shader;
+use crate::geometry::Mesh;
+use crate::material::Shader;
 use glam::{f32::Quat, EulerRot, Mat4, Vec3};
 use std::sync::{Arc, Mutex};
 
 pub enum Variant {
-    Entity(Arc<Geometry>, Arc<Shader>),
+    Entity(Arc<Mesh>, Arc<Shader>),
     Light(wgpu::Color, f32),
     Group,
 }
@@ -44,7 +44,7 @@ pub fn new_light(color: wgpu::Color, radius: f32) -> NodeRef {
     }))
 }
 
-pub fn new_entity(geometry: Arc<Geometry>, shader: Arc<Shader>) -> NodeRef {
+pub fn new_entity(geometry: Arc<Mesh>, shader: Arc<Shader>) -> NodeRef {
     Arc::new(Mutex::new(NodeData {
         variant: Variant::Entity(geometry, shader),
         ..Default::default()

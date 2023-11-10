@@ -1,8 +1,8 @@
-use crate::geometry::Geometry;
+use crate::geometry::Mesh;
 use crate::geometry::Vertex;
 use wgpu::Device;
 
-impl Geometry {
+impl Mesh {
     pub fn new_cube(col: u32, device: &Device) -> Self {
         let vertex_data = [
             // top (0, 0, 1)

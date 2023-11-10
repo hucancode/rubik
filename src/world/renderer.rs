@@ -1,5 +1,5 @@
 use crate::geometry::Vertex;
-use crate::shader::Shader;
+use crate::material::Shader;
 use crate::world::{node, Camera, Light, Node, NodeRef};
 use glam::{Mat4, Vec4};
 use std::cmp::max;
@@ -135,7 +135,7 @@ impl Renderer {
             push_constant_ranges: &[],
         });
 
-        let shader = Shader::new(&device, include_str!("../shader/shader.wgsl"));
+        let shader = Shader::new(&device, include_str!("../material/shader.wgsl"));
 
         let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
             size: wgpu::Extent3d {
@@ -360,7 +360,7 @@ impl Renderer {
                 let position = transform * Vec4::W;
                 let trunk = Light {
                     position: [position.x, position.y, position.z],
-                    radius: radius,
+                    radius,
                     color: [
                         color.r as f32,
                         color.g as f32,

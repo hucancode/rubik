@@ -1,14 +1,14 @@
 use crate::geometry::Vertex;
 use wgpu::{util::DeviceExt, Buffer, Device};
 
-pub struct Geometry {
+pub struct Mesh {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u16>,
     pub vertex_buffer: Buffer,
     pub index_buffer: Buffer,
 }
 
-impl Geometry {
+impl Mesh {
     pub fn new(vertices: Vec<Vertex>, indices: Vec<u16>, device: &Device) -> Self {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),

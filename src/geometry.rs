@@ -1,6 +1,6 @@
 pub mod cube;
-pub mod geometry;
+pub mod mesh;
 pub mod rubik_piece;
 pub mod vertex;
-pub use geometry::Geometry;
+pub use mesh::Mesh;
 pub use vertex::Vertex;

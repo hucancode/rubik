@@ -1,8 +1,8 @@
-use crate::geometry::Geometry;
+use crate::geometry::Mesh;
 use crate::geometry::Vertex;
 use wgpu::Device;
 
-impl Geometry {
+impl Mesh {
     pub fn new_rubik_piece(device: &Device) -> Self {
         let green = 0x40a02bff; // right - green
         let purple = 0x89b4faff; // left - purple
