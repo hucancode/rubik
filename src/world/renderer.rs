@@ -35,6 +35,7 @@ pub struct Renderer {
     vp_buffer: Buffer,
     w_buffer: Buffer,
     light_buffer: Buffer,
+    light_count_buffer: Buffer,
 }
 
 impl Renderer {
@@ -99,6 +100,16 @@ impl Renderer {
                             ty: wgpu::BufferBindingType::Uniform,
                             has_dynamic_offset: false,
                             min_binding_size: wgpu::BufferSize::new(0),
+                        },
+                        count: None,
+                    },
+                    BindGroupLayoutEntry {
+                        binding: 2, // light count
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: wgpu::BufferSize::new(8),
                         },
                         count: None,
                     },
@@ -187,6 +198,12 @@ impl Renderer {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        let light_count_buffer = device.create_buffer(&BufferDescriptor {
+            label: Some("Light Count"),
+            size: 8,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
 
         let bind_group_camera = device.create_bind_group(&BindGroupDescriptor {
             layout: &bind_group_layout_camera,
@@ -198,6 +215,10 @@ impl Renderer {
                 wgpu::BindGroupEntry {
                     binding: 1,
                     resource: light_buffer.as_entire_binding(),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: light_count_buffer.as_entire_binding(),
                 },
             ],
             label: None,
@@ -241,6 +262,7 @@ impl Renderer {
             vp_buffer,
             w_buffer,
             light_buffer,
+            light_count_buffer,
         }
     }
 
@@ -327,6 +349,11 @@ impl Renderer {
                     q.push((child.clone(), transform_mx));
                 }
             }
+            self.queue.write_buffer(
+                &self.light_count_buffer,
+                0,
+                bytemuck::bytes_of(&lights.len()),
+            );
             let light_uniform_size = size_of::<Light>() as wgpu::BufferAddress;
             for (i, (color, radius, transform)) in lights.into_iter().enumerate() {
                 let offset = (light_uniform_size * i as u64) as wgpu::BufferAddress;

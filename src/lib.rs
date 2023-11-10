@@ -3,8 +3,8 @@ mod shader;
 mod world;
 
 use geometry::Geometry;
-use shader::Shader;
 use glam::Vec4;
+use shader::Shader;
 use std::f32::consts::PI;
 use std::ops::Add;
 use std::sync::Arc;
@@ -42,32 +42,63 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
         rows.push(row.clone());
         renderer.root.add_child(row);
     }
-    let mut rubik = new_entity(rubik_mesh.clone(), shader.clone());
-    rubik.scale_uniform(0.5);
-    rubik.translate(1.0, 1.0, 1.0);
-    let mut light = new_light(
-        wgpu::Color {
-            r: 1.0,
-            g: 0.5,
-            b: 0.0,
-            a: 1.0,
-        },
-        7.0,
-    );
-    light.add_child(rubik.clone());
-    renderer.root.add_child(light.clone());
+    let light_datas = vec![
+        (
+            wgpu::Color {
+                r: 0.0,
+                g: 0.5,
+                b: 1.0,
+                a: 1.0,
+            },
+            10.0,
+            0,
+        ),
+        (
+            wgpu::Color {
+                r: 0.0,
+                g: 0.5,
+                b: 1.0,
+                a: 1.0,
+            },
+            10.0,
+            2200,
+        ),
+        (
+            wgpu::Color {
+                r: 0.0,
+                g: 1.0,
+                b: 0.5,
+                a: 1.0,
+            },
+            10.0,
+            4400,
+        ),
+    ];
+    let mut lights = Vec::new();
+    for (color, radius, time_offset) in light_datas {
+        let mut cube = new_entity(rubik_mesh.clone(), shader.clone());
+        cube.scale_uniform(0.5);
+        cube.translate(1.0, 1.0, 1.0);
+        let mut light = new_light(color, radius);
+        light.add_child(cube.clone());
+        renderer.root.add_child(light.clone());
+        lights.push((light, cube, time_offset));
+    }
     let app_start_time = Instant::now();
     let mut update = move || {
         let time = app_start_time.elapsed().as_millis();
-        let rx = PI * 2.0 * ((time as f64) * 0.00042).sin() as f32;
-        let ry = PI * 2.0 * ((time as f64) * 0.00011).sin() as f32;
-        let rz = PI * 2.0 * ((time as f64) * 0.00027).sin() as f32;
-        rubik.rotate(rx, ry, rz);
-        let x = 4.0 * (time as f64 / 1700.0).sin() as f32;
-        let y = 4.0 * (time as f64 / 1300.0).sin() as f32;
-        let z = 4.0 * (time as f64 / 700.0).sin() as f32;
-        let v = Vec4::new(x, y, z, 1.0).normalize() * 10.0;
-        light.translate(v.x, v.y, v.z);
+        for (light, cube, time_offset) in lights.iter_mut() {
+            let time = time + *time_offset as u128;
+            let rx = PI * 2.0 * ((time as f64) * 0.00042).sin() as f32;
+            let ry = PI * 2.0 * ((time as f64) * 0.00011).sin() as f32;
+            let rz = PI * 2.0 * ((time as f64) * 0.00027).sin() as f32;
+            cube.rotate(rx, ry, rz);
+            let x = 4.0 * (time as f64 / 1700.0).sin() as f32;
+            let y = 4.0 * (time as f64 / 1300.0).sin() as f32;
+            let z = 4.0 * (time as f64 / 700.0).sin() as f32;
+            let v = Vec4::new(x, y, z, 1.0).normalize() * 10.0;
+            light.translate(v.x, v.y, v.z);
+        }
         for (i, row) in rows.iter_mut().enumerate() {
             let alpha = PI * (1.0 + ((time as f64) * 0.0007 + (i as f64) * 0.08).sin() as f32);
             row.rotate_z(alpha);
