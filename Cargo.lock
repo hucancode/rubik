@@ -596,7 +596,7 @@ dependencies = [
 
 [[package]]
 name = "hello-wgpu"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bytemuck",
  "env_logger",
