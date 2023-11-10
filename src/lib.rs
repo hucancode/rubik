@@ -1,7 +1,7 @@
+mod app;
 mod geometry;
 mod material;
 mod world;
-mod app;
 use crate::app::App;
 use winit::{
     event::{Event, WindowEvent},
