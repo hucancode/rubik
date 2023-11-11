@@ -95,9 +95,6 @@ impl Node for NodeData {
     fn scale_z(&mut self, z: f32) {
         self.scale(0.0, 0.0, z)
     }
-    fn scale_uniform(&mut self, v: f32) {
-        self.scale(v, v, v)
-    }
     fn rotate(&mut self, x: f32, y: f32, z: f32) {
         self.rotation = Quat::from_euler(EulerRot::XYZ, x, y, z);
     }
@@ -145,9 +142,6 @@ impl Node for NodeRef {
     }
     fn scale_z(&mut self, z: f32) {
         self.scale(0.0, 0.0, z)
-    }
-    fn scale_uniform(&mut self, v: f32) {
-        self.scale(v, v, v)
     }
     fn rotate(&mut self, x: f32, y: f32, z: f32) {
         if let Ok(mut node) = self.lock() {
