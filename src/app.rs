@@ -11,6 +11,7 @@ const CUBE_SIZE: f32 = 2.0;
 const CUBE_MARGIN: f32 = 0.15;
 const MAX_FPS: u64 = 60;
 const TARGET_FRAME_TIME: Duration = Duration::from_millis(1000 / MAX_FPS);
+const LIGHT_RADIUS: f32 = 30.0;
 
 pub struct App {
     renderer: Renderer,
@@ -31,10 +32,11 @@ impl App {
         ));
         let d = CUBE_SIZE + CUBE_MARGIN;
         let mut rows = Vec::new();
-        for z in -1..=1 {
+        let n = 4;
+        for z in -n..=n {
             let mut row = new_group();
-            for y in -1..=1 {
-                for x in -1..=1 {
+            for y in -n..=n {
+                for x in -n..=n {
                     let mut cube = new_entity(cube_mesh.clone(), shader.clone());
                     row.add_child(cube.clone());
                     cube.translate(d * x as f32, d * y as f32, d * z as f32);
@@ -51,7 +53,7 @@ impl App {
                     b: 1.0,
                     a: 1.0,
                 },
-                12.0,
+                LIGHT_RADIUS,
                 0,
             ),
             (
@@ -61,7 +63,7 @@ impl App {
                     b: 1.0,
                     a: 1.0,
                 },
-                12.0,
+                LIGHT_RADIUS,
                 2200,
             ),
             (
@@ -71,7 +73,7 @@ impl App {
                     b: 0.5,
                     a: 1.0,
                 },
-                12.0,
+                LIGHT_RADIUS,
                 4400,
             ),
         ];
@@ -109,7 +111,7 @@ impl App {
             let x = 4.0 * (time as f64 / 1700.0).sin() as f32;
             let y = 4.0 * (time as f64 / 1300.0).sin() as f32;
             let z = 4.0 * (time as f64 / 700.0).sin() as f32;
-            let v = Vec4::new(x, y, z, 1.0).normalize() * 12.0;
+            let v = Vec4::new(x, y, z, 1.0).normalize() * LIGHT_RADIUS;
             light.translate(v.x, v.y, v.z);
         }
         for (i, row) in self.rows.iter_mut().enumerate() {

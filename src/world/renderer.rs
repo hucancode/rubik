@@ -28,6 +28,7 @@ const CLEAR_COLOR: Color = Color {
     b: 0.01388235294,
     a: 1.0,
 };
+const CAMERA_DISTANCE: f32 = 30.0;
 
 pub struct Renderer {
     pub camera: Camera,
@@ -189,8 +190,8 @@ impl Renderer {
             multisample: MultisampleState::default(),
             multiview: None,
         });
-
-        let vp = Camera::make_vp_matrix(config.width as f32 / config.height as f32);
+        let vp =
+            Camera::make_vp_matrix(config.width as f32 / config.height as f32, CAMERA_DISTANCE);
         let vp_ref: &[f32; 16] = vp.as_ref();
         let vp_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Camera View Projection Buffer"),
@@ -276,7 +277,10 @@ impl Renderer {
         self.config.width = max(1, width);
         self.config.height = max(1, height);
         self.surface.configure(&self.device, &self.config);
-        let mvp = Camera::make_vp_matrix(self.config.width as f32 / self.config.height as f32);
+        let mvp = Camera::make_vp_matrix(
+            self.config.width as f32 / self.config.height as f32,
+            CAMERA_DISTANCE,
+        );
         let mvp_ref: &[f32; 16] = mvp.as_ref();
         self.queue
             .write_buffer(&self.vp_buffer, 0, bytemuck::cast_slice(mvp_ref));
