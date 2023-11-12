@@ -43,7 +43,7 @@ impl App {
             rows.push(row.clone());
             renderer.root.add_child(row);
         }
-        let light_datas = vec![
+        let lights = vec![
             (
                 wgpu::Color {
                     r: 0.0,
@@ -75,16 +75,18 @@ impl App {
                 4400,
             ),
         ];
-        let mut lights = Vec::new();
-        for (color, radius, time_offset) in light_datas {
-            let mut cube = new_entity(rubik_mesh.clone(), shader.clone());
-            cube.scale_uniform(0.5);
-            cube.translate(1.0, 1.0, 1.0);
-            let mut light = new_light(color, radius);
-            light.add_child(cube.clone());
-            renderer.root.add_child(light.clone());
-            lights.push((light, cube, time_offset));
-        }
+        let lights = lights
+            .into_iter()
+            .map(|(color, radius, time_offset)| {
+                let mut cube = new_entity(rubik_mesh.clone(), shader.clone());
+                cube.scale_uniform(0.5);
+                cube.translate(1.0, 1.0, 1.0);
+                let mut light = new_light(color, radius);
+                light.add_child(cube.clone());
+                renderer.root.add_child(light.clone());
+                (light, cube, time_offset)
+            })
+            .collect();
         Self {
             renderer,
             start_timestamp: Instant::now(),
