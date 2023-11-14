@@ -1,7 +1,7 @@
 use crate::geometry::Mesh;
 use crate::material::Shader;
 use crate::rubik::Rubik;
-use crate::world::{new_entity, new_group, new_light, Node, NodeRef, Renderer};
+use crate::world::{new_entity, new_light, Node, NodeRef, Renderer};
 use glam::Vec4;
 use std::f32::consts::PI;
 use std::sync::Arc;
@@ -30,9 +30,13 @@ impl App {
             include_str!("material/shader.wgsl"),
         ));
         let mut rubik = Rubik::new();
-        rubik.generate_pieces(2, shader.clone(), cube_mesh.clone());
-        for row in rubik.rows.iter() {
-            renderer.root.add_child(row.clone())
+        rubik.generate_pieces(1, shader.clone(), cube_mesh.clone());
+        for pz in rubik.pieces.iter() {
+            for py in pz.iter() {
+                for piece in py.iter() {
+                    renderer.root.add_child(piece.clone());
+                }
+            }
         }
         let lights = vec![
             (
@@ -88,8 +92,9 @@ impl App {
     }
     pub fn update(&mut self) {
         if self.last_update_timestamp.elapsed() < TARGET_FRAME_TIME {
-            return;
+            //return;
         }
+        let delta = 0.001 * self.last_update_timestamp.elapsed().as_millis() as f32;
         let time = self.start_timestamp.elapsed().as_millis();
         for (light, cube, time_offset) in self.lights.iter_mut() {
             let time = time + *time_offset;
@@ -103,7 +108,7 @@ impl App {
             let v = Vec4::new(x, y, z, 1.0).normalize() * LIGHT_RADIUS;
             light.translate(v.x, v.y, v.z);
         }
-        self.rubik.update(time);
+        self.rubik.update(delta);
         self.last_update_timestamp = Instant::now();
     }
 

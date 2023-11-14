@@ -491,6 +491,12 @@ dependencies = [
 
 [[package]]
 name = "glam"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "12f597d56c1bd55a811a1be189459e8fad2bbc272616375602443bdfb37fa774"
+
+[[package]]
+name = "glam"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5418c17512bdf42730f9032c74e1ae39afc408745ebb2acf72fbc4691c17945"
@@ -600,9 +606,10 @@ version = "0.4.0"
 dependencies = [
  "bytemuck",
  "env_logger",
- "glam",
+ "glam 0.24.2",
  "log",
  "pollster",
+ "tween",
  "wgpu",
  "winit",
 ]
@@ -1435,6 +1442,15 @@ name = "ttf-parser"
 version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49d64318d8311fc2668e48b63969f4343e0a85c4a109aa8460d6672e364b8bd1"
+
+[[package]]
+name = "tween"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90aba0c5c9d07e12084c38dcbf0f4b16f74801b588650ad633f9d7e9a0143952"
+dependencies = [
+ "glam 0.22.0",
+]
 
 [[package]]
 name = "unicode-ident"

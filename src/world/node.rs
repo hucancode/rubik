@@ -63,6 +63,7 @@ pub trait Node {
     fn scale_uniform(&mut self, v: f32) {
         self.scale(v, v, v)
     }
+    fn rotate_quat(&mut self, q: Quat);
     fn rotate(&mut self, x: f32, y: f32, z: f32);
     fn rotate_x(&mut self, x: f32);
     fn rotate_y(&mut self, y: f32);
@@ -94,6 +95,9 @@ impl Node for NodeData {
     }
     fn scale_z(&mut self, z: f32) {
         self.scale(0.0, 0.0, z)
+    }
+    fn rotate_quat(&mut self, q: Quat) {
+        self.rotation = q;
     }
     fn rotate(&mut self, x: f32, y: f32, z: f32) {
         self.rotation = Quat::from_euler(EulerRot::XYZ, x, y, z);
@@ -142,6 +146,11 @@ impl Node for NodeRef {
     }
     fn scale_z(&mut self, z: f32) {
         self.scale(0.0, 0.0, z)
+    }
+    fn rotate_quat(&mut self, q: Quat) {
+        if let Ok(mut node) = self.lock() {
+            node.rotate_quat(q);
+        }
     }
     fn rotate(&mut self, x: f32, y: f32, z: f32) {
         if let Ok(mut node) = self.lock() {
