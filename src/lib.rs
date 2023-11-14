@@ -1,6 +1,7 @@
 mod app;
 mod geometry;
 mod material;
+mod rubik;
 mod world;
 use crate::app::App;
 use winit::{
