@@ -142,6 +142,11 @@ impl Node for NodeData {
         }
         return ret;
     }
+    fn extract_child(&mut self) -> Vec<NodeRef> {
+        let ret = self.children.clone();
+        self.children = Vec::new();
+        ret
+    }
 }
 impl Node for NodeRef {
     fn get_translation(&self) -> Vec3 {
@@ -219,6 +224,12 @@ impl Node for NodeRef {
     {
         if let Ok(mut node) = self.lock() {
             return node.extract_child_if(filter);
+        }
+        return Vec::new();
+    }
+    fn extract_child(&mut self) -> Vec<NodeRef> {
+        if let Ok(mut node) = self.lock() {
+            return node.extract_child();
         }
         return Vec::new();
     }
