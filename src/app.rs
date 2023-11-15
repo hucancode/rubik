@@ -19,13 +19,12 @@ impl App {
     pub async fn new(window: &Window) -> Self {
         let mut renderer = Renderer::new(window).await;
         let cube_mesh = Arc::new(Mesh::new_cube(0xcba6f7ff, &renderer.device));
-        let rubik_mesh = Arc::new(Mesh::new_rubik_piece(&renderer.device));
         let shader = Arc::new(Shader::new(
             &renderer.device,
             include_str!("material/shader.wgsl"),
         ));
         let mut rubik = Rubik::new();
-        rubik.generate_pieces(2, shader.clone(), cube_mesh.clone());
+        rubik.generate_pieces(1, &renderer.device);
         rubik.start_move_random();
         renderer.root.add_child(rubik.root.clone());
         let lights = vec![
@@ -63,7 +62,7 @@ impl App {
         let lights = lights
             .into_iter()
             .map(|(color, radius, time_offset)| {
-                let mut cube = new_entity(rubik_mesh.clone(), shader.clone());
+                let mut cube = new_entity(cube_mesh.clone(), shader.clone());
                 cube.scale_uniform(0.7);
                 cube.translate(1.0, 1.0, 1.0);
                 let mut light = new_light(color, radius);

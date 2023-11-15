@@ -6,6 +6,7 @@ use std::convert::From;
 use std::f32::consts::PI;
 use std::sync::Arc;
 use tween::{SineInOut, Tweener};
+use wgpu::Device;
 
 #[derive(Clone, Copy)]
 pub enum Move {
@@ -35,7 +36,6 @@ pub struct Rubik {
     pieces: Vec<NodeRef>,
     tween: Tweener<f32, f32, SineInOut>,
     current_move: Move,
-    moving_pieces: Vec<NodeRef>,
     pub root: NodeRef,
     moving_pivot: NodeRef,
     static_root: NodeRef,
@@ -54,14 +54,17 @@ impl Rubik {
             pieces: Vec::new(),
             tween: Tweener::sine_in_out(0.0, PI * 2.0, 5.0),
             current_move: Move::NONE,
-            moving_pieces: Vec::new(),
             root,
             moving_pivot,
             static_root,
             span: 0,
         }
     }
-    pub fn generate_pieces(&mut self, span: usize, shader: Arc<Shader>, mesh: Arc<Mesh>) {
+    pub fn generate_pieces(&mut self, span: usize, device: &Device) {
+        let shader = Arc::new(Shader::new(
+            device,
+            include_str!("../material/shader.wgsl"),
+        ));
         let d = CUBE_SIZE + CUBE_MARGIN;
         self.span = span;
         let n = span as i32;
@@ -69,7 +72,21 @@ impl Rubik {
         for z in -n..=n {
             for y in -n..=n {
                 for x in -n..=n {
-                    let mut cube = new_entity(mesh.clone(), shader.clone());
+                    let faced_top = z == n;
+                    let faced_bottom = z == -n;
+                    let faced_left = x == -n;
+                    let faced_right = x == n;
+                    let faced_front = y == n;
+                    let faced_back = y == -n;
+                    let rubik_mesh = Arc::new(Mesh::new_rubik_piece(device, 
+                        faced_top, 
+                        faced_bottom, 
+                        faced_left, 
+                        faced_right, 
+                        faced_front, 
+                        faced_back, 
+                    ));
+                    let mut cube = new_entity(rubik_mesh, shader.clone());
                     self.pieces.push(cube.clone());
                     self.static_root.add_child(cube.clone());
                     cube.translate(d * x as f32, d * y as f32, d * z as f32);
@@ -81,7 +98,7 @@ impl Rubik {
         let mut rng = rand::thread_rng();
         self.current_move = Move::from(rng.gen_range(0..6));
         let size = CUBE_SIZE + CUBE_MARGIN;
-        let depth = rng.gen_range(0..self.span * 2) as f32 * size * 0.5;
+        let depth = rng.gen_range(1..self.span * 2) as f32 * size * 0.5;
         match self.current_move {
             Move::TOP => {
                 for piece in self.static_root.extract_child_if(|piece| {
@@ -133,17 +150,17 @@ impl Rubik {
             }
             _ => {}
         };
-        self.tween = Tweener::sine_in_out(0.0, PI * 2.0, 2.0);
+        let rotate_amount = PI * 0.5 * rng.gen_range(1..=3) as f32;
+        self.tween = Tweener::sine_in_out(0.0, rotate_amount, 2.0);
     }
     pub fn finish_move(&mut self) {
         let mat = self.moving_pivot.calculate_transform();
-        for (_, piece) in self.moving_pieces.iter_mut().enumerate() {
-            let transform = mat * piece.calculate_transform();
-            let (_scale, rotation, translation) = transform.to_scale_rotation_translation();
+        println!("finish moving");
+        for mut piece in self.moving_pivot.extract_child() {
+            let mat = mat * piece.calculate_transform();
+            let (_scale, rotation, translation) = mat.to_scale_rotation_translation();
             piece.translate(translation.x, translation.y, translation.z);
             piece.rotate_quat(rotation);
-        }
-        for piece in self.moving_pivot.extract_child() {
             self.static_root.add_child(piece);
         }
         self.moving_pivot.rotate(0.0, 0.0, 0.0);

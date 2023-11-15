@@ -27,7 +27,7 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     result.color = input.color;
     result.world_position = world * input.position;
     result.position = view_proj * result.world_position;
-    result.normal = input.normal;
+    result.normal = world * input.normal;
     return result;
 }
 
