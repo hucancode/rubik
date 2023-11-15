@@ -28,7 +28,7 @@ const CLEAR_COLOR: Color = Color {
     b: 0.01388235294,
     a: 1.0,
 };
-const CAMERA_DISTANCE: f32 = 30.0;
+const CAMERA_DISTANCE: f32 = 15.0;
 
 pub struct Renderer {
     pub camera: Camera,

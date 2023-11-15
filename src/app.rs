@@ -5,17 +5,12 @@ use crate::world::{new_entity, new_light, Node, NodeRef, Renderer};
 use glam::Vec4;
 use std::f32::consts::PI;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 use winit::window::Window;
 
-const MAX_FPS: u64 = 60;
-const TARGET_FRAME_TIME: Duration = Duration::from_millis(1000 / MAX_FPS);
-const LIGHT_RADIUS: f32 = 30.0;
+const LIGHT_RADIUS: f32 = 15.0;
 
 pub struct App {
     renderer: Renderer,
-    start_timestamp: Instant,
-    last_update_timestamp: Instant,
     lights: Vec<(NodeRef, NodeRef, u128)>,
     rubik: Rubik,
 }
@@ -30,14 +25,9 @@ impl App {
             include_str!("material/shader.wgsl"),
         ));
         let mut rubik = Rubik::new();
-        rubik.generate_pieces(1, shader.clone(), cube_mesh.clone());
-        for pz in rubik.pieces.iter() {
-            for py in pz.iter() {
-                for piece in py.iter() {
-                    renderer.root.add_child(piece.clone());
-                }
-            }
-        }
+        rubik.generate_pieces(2, shader.clone(), cube_mesh.clone());
+        rubik.start_move_random();
+        renderer.root.add_child(rubik.root.clone());
         let lights = vec![
             (
                 wgpu::Color {
@@ -84,18 +74,11 @@ impl App {
             .collect();
         Self {
             renderer,
-            start_timestamp: Instant::now(),
-            last_update_timestamp: Instant::now(),
             lights,
             rubik,
         }
     }
-    pub fn update(&mut self) {
-        if self.last_update_timestamp.elapsed() < TARGET_FRAME_TIME {
-            //return;
-        }
-        let delta = 0.001 * self.last_update_timestamp.elapsed().as_millis() as f32;
-        let time = self.start_timestamp.elapsed().as_millis();
+    pub fn update(&mut self, delta_time: f32, time: u128) {
         for (light, cube, time_offset) in self.lights.iter_mut() {
             let time = time + *time_offset;
             let rx = PI * 2.0 * ((time as f64) * 0.00042).sin() as f32;
@@ -108,8 +91,7 @@ impl App {
             let v = Vec4::new(x, y, z, 1.0).normalize() * LIGHT_RADIUS;
             light.translate(v.x, v.y, v.z);
         }
-        self.rubik.update(delta);
-        self.last_update_timestamp = Instant::now();
+        self.rubik.update(delta_time);
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {

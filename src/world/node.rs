@@ -52,6 +52,7 @@ pub fn new_entity(geometry: Arc<Mesh>, shader: Arc<Shader>) -> NodeRef {
 }
 
 pub trait Node {
+    fn get_translation(&self) -> Vec3;
     fn translate(&mut self, x: f32, y: f32, z: f32);
     fn translate_x(&mut self, x: f32);
     fn translate_y(&mut self, y: f32);
@@ -70,8 +71,17 @@ pub trait Node {
     fn rotate_z(&mut self, z: f32);
     fn calculate_transform(&self) -> Mat4;
     fn add_child(&mut self, node: NodeRef);
+    fn extract_child_if<F>(&mut self, filter: F) -> Vec<NodeRef>
+    where
+        F: Fn(&NodeRef) -> bool;
+    fn extract_child(&mut self) -> Vec<NodeRef> {
+        self.extract_child_if(|_| true)
+    }
 }
 impl Node for NodeData {
+    fn get_translation(&self) -> Vec3 {
+        return self.translation.clone();
+    }
     fn translate(&mut self, x: f32, y: f32, z: f32) {
         self.translation = Vec3::new(x, y, z);
     }
@@ -117,8 +127,30 @@ impl Node for NodeData {
     fn add_child(&mut self, child: NodeRef) {
         self.children.push(child);
     }
+    fn extract_child_if<F>(&mut self, filter: F) -> Vec<NodeRef>
+    where
+        F: Fn(&NodeRef) -> bool,
+    {
+        let mut ret = Vec::new();
+        let mut i = 0;
+        while i < self.children.len() {
+            if filter(&self.children[i]) {
+                ret.push(self.children.swap_remove(i));
+            } else {
+                i += 1;
+            }
+        }
+        return ret;
+    }
 }
 impl Node for NodeRef {
+    fn get_translation(&self) -> Vec3 {
+        if let Ok(node) = self.lock() {
+            return node.translation.clone();
+        }
+        eprintln!("Something went wrong!");
+        return Vec3::ZERO;
+    }
     fn translate(&mut self, x: f32, y: f32, z: f32) {
         if let Ok(mut node) = self.lock() {
             node.translate(x, y, z)
@@ -180,5 +212,14 @@ impl Node for NodeRef {
                 child_mtx.parent = Some(self.clone());
             }
         }
+    }
+    fn extract_child_if<F>(&mut self, filter: F) -> Vec<NodeRef>
+    where
+        F: Fn(&NodeRef) -> bool,
+    {
+        if let Ok(mut node) = self.lock() {
+            return node.extract_child_if(filter);
+        }
+        return Vec::new();
     }
 }
