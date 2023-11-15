@@ -3,7 +3,8 @@ use crate::geometry::Vertex;
 use wgpu::Device;
 
 impl Mesh {
-    pub fn new_rubik_piece(device: &Device, 
+    pub fn new_rubik_piece(
+        device: &Device,
         faced_top: bool,
         faced_bottom: bool,
         faced_left: bool,
@@ -17,7 +18,7 @@ impl Mesh {
         const WHITE: u32 = 0xf8fafcff; // bottom - white
         const RED: u32 = 0xef4444ff; // front - red
         const ORANGE: u32 = 0xfe640bff; // back - orange
-        const BLACK: u32 = 0x11111bff; // black
+        const BLACK: u32 = 0x040407ff; // black
         let top_color = if faced_top { YELLOW } else { BLACK };
         let bottom_color = if faced_bottom { WHITE } else { BLACK };
         let left_color = if faced_left { PURPLE } else { BLACK };

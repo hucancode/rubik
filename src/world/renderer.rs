@@ -28,7 +28,7 @@ const CLEAR_COLOR: Color = Color {
     b: 0.01388235294,
     a: 1.0,
 };
-const CAMERA_DISTANCE: f32 = 15.0;
+const CAMERA_DISTANCE: f32 = 10.0;
 
 pub struct Renderer {
     pub camera: Camera,
@@ -43,6 +43,7 @@ pub struct Renderer {
     bind_group_node: BindGroup,
     vp_buffer: Buffer,
     w_buffer: Buffer,
+    r_buffer: Buffer,
     light_buffer: Buffer,
     light_count_buffer: Buffer,
 }
@@ -125,16 +126,28 @@ impl Renderer {
             });
         let bind_group_layout_node = device.create_bind_group_layout(&BindGroupLayoutDescriptor {
             label: None,
-            entries: &[BindGroupLayoutEntry {
-                binding: 0, // world
-                visibility: ShaderStages::VERTEX,
-                ty: BindingType::Buffer {
-                    ty: BufferBindingType::Uniform,
-                    has_dynamic_offset: true,
-                    min_binding_size: BufferSize::new(size_of::<Mat4>() as u64),
+            entries: &[
+                BindGroupLayoutEntry {
+                    binding: 0, // world
+                    visibility: ShaderStages::VERTEX,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: BufferSize::new(size_of::<Mat4>() as u64),
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
+                BindGroupLayoutEntry {
+                    binding: 1, // rotation
+                    visibility: ShaderStages::VERTEX,
+                    ty: BindingType::Buffer {
+                        ty: BufferBindingType::Uniform,
+                        has_dynamic_offset: true,
+                        min_binding_size: BufferSize::new(size_of::<Mat4>() as u64),
+                    },
+                    count: None,
+                },
+            ],
         });
 
         let pipeline_layout = device.create_pipeline_layout(&PipelineLayoutDescriptor {
@@ -238,21 +251,37 @@ impl Renderer {
             align_to(node_uniform_size, alignment)
         };
         let w_buffer = device.create_buffer(&BufferDescriptor {
-            label: Some("Model Buffer"),
+            label: Some("Model world transform buffer"),
+            size: MAX_ENTITY as BufferAddress * node_uniform_aligned,
+            usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        let r_buffer = device.create_buffer(&BufferDescriptor {
+            label: Some("Model rotation buffer"),
             size: MAX_ENTITY as BufferAddress * node_uniform_aligned,
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
         let bind_group_node = device.create_bind_group(&BindGroupDescriptor {
             layout: &bind_group_layout_node,
-            entries: &[BindGroupEntry {
-                binding: 0,
-                resource: BindingResource::Buffer(BufferBinding {
-                    buffer: &w_buffer,
-                    offset: 0,
-                    size: BufferSize::new(node_uniform_size),
-                }),
-            }],
+            entries: &[
+                BindGroupEntry {
+                    binding: 0,
+                    resource: BindingResource::Buffer(BufferBinding {
+                        buffer: &w_buffer,
+                        offset: 0,
+                        size: BufferSize::new(node_uniform_size),
+                    }),
+                },
+                BindGroupEntry {
+                    binding: 1,
+                    resource: BindingResource::Buffer(BufferBinding {
+                        buffer: &r_buffer,
+                        offset: 0,
+                        size: BufferSize::new(node_uniform_size),
+                    }),
+                },
+            ],
             label: None,
         });
         Self {
@@ -268,6 +297,7 @@ impl Renderer {
             bind_group_camera,
             vp_buffer,
             w_buffer,
+            r_buffer,
             light_buffer,
             light_count_buffer,
         }
@@ -344,7 +374,10 @@ impl Renderer {
                 let node = node.lock().unwrap();
                 match &node.variant {
                     node::Variant::Entity(geometry, shader) => {
-                        nodes.push((geometry.clone(), shader.clone(), transform_mx));
+                        let (_scale, rotation, _translation) =
+                            transform_mx.to_scale_rotation_translation();
+                        let rotation = Mat4::from_quat(rotation);
+                        nodes.push((geometry.clone(), shader.clone(), transform_mx, rotation));
                     }
                     node::Variant::Light(color, radius) => {
                         lights.push((*color, *radius, transform_mx));
@@ -384,14 +417,23 @@ impl Renderer {
                     self.device.limits().min_uniform_buffer_offset_alignment as BufferAddress;
                 align_to(node_uniform_size, alignment)
             };
-            for (i, (geometry, _shader, transform)) in nodes.iter().enumerate() {
+            for (i, (geometry, _shader, transform, rotation)) in nodes.iter().enumerate() {
                 let offset = (node_uniform_aligned * i as u64) as BufferAddress;
                 self.queue.write_buffer(
                     &self.w_buffer,
                     offset,
                     bytemuck::cast_slice(transform.as_ref()),
                 );
-                rpass.set_bind_group(0, &self.bind_group_node, &[offset as DynamicOffset]);
+                self.queue.write_buffer(
+                    &self.r_buffer,
+                    offset,
+                    bytemuck::cast_slice(rotation.as_ref()),
+                );
+                rpass.set_bind_group(
+                    0,
+                    &self.bind_group_node,
+                    &[offset as DynamicOffset, offset as DynamicOffset],
+                );
                 rpass.set_index_buffer(geometry.index_buffer.slice(..), IndexFormat::Uint16);
                 rpass.set_vertex_buffer(0, geometry.vertex_buffer.slice(..));
                 let n = geometry.indices.len() as u32;

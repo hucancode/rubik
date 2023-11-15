@@ -7,7 +7,7 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 use winit::window::Window;
 
-const LIGHT_RADIUS: f32 = 15.0;
+const LIGHT_RADIUS: f32 = 10.0;
 
 pub struct App {
     renderer: Renderer,

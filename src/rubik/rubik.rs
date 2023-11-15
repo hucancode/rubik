@@ -61,10 +61,7 @@ impl Rubik {
         }
     }
     pub fn generate_pieces(&mut self, span: usize, device: &Device) {
-        let shader = Arc::new(Shader::new(
-            device,
-            include_str!("../material/shader.wgsl"),
-        ));
+        let shader = Arc::new(Shader::new(device, include_str!("../material/shader.wgsl")));
         let d = CUBE_SIZE + CUBE_MARGIN;
         self.span = span;
         let n = span as i32;
@@ -78,13 +75,14 @@ impl Rubik {
                     let faced_right = x == n;
                     let faced_front = y == n;
                     let faced_back = y == -n;
-                    let rubik_mesh = Arc::new(Mesh::new_rubik_piece(device, 
-                        faced_top, 
-                        faced_bottom, 
-                        faced_left, 
-                        faced_right, 
-                        faced_front, 
-                        faced_back, 
+                    let rubik_mesh = Arc::new(Mesh::new_rubik_piece(
+                        device,
+                        faced_top,
+                        faced_bottom,
+                        faced_left,
+                        faced_right,
+                        faced_front,
+                        faced_back,
                     ));
                     let mut cube = new_entity(rubik_mesh, shader.clone());
                     self.pieces.push(cube.clone());

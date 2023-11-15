@@ -18,6 +18,8 @@ struct Light {
 
 @group(0) @binding(0)
 var<uniform> world: mat4x4<f32>;
+@group(0) @binding(1)
+var<uniform> rotation: mat4x4<f32>;
 @group(1) @binding(0)
 var<uniform> view_proj: mat4x4<f32>;
 
@@ -27,7 +29,7 @@ fn vs_main(input: VertexInput) -> VertexOutput {
     result.color = input.color;
     result.world_position = world * input.position;
     result.position = view_proj * result.world_position;
-    result.normal = world * input.normal;
+    result.normal = rotation * input.normal;
     return result;
 }
 
