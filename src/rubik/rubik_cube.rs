@@ -16,11 +16,11 @@ use wgpu::Device;
 const CUBE_SIZE: f32 = 2.0;
 const CUBE_MARGIN: f32 = 0.15;
 
-type SendSyncTween<Value, Time> = Tweener<Value, Time, Box<dyn Tween<Value> + Send + Sync>>;
+type GenericTween<Value, Time> = Tweener<Value, Time, Box<dyn Tween<Value>>>;
 
 pub struct Rubik {
     pieces: Vec<NodeRef>,
-    tween: SendSyncTween<f32, f32>,
+    tween: GenericTween<f32, f32>,
     current_move: Move,
     pub root: NodeRef,
     moving_pivot: NodeRef,
