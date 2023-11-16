@@ -1,37 +1,16 @@
 use crate::geometry::Mesh;
 use crate::material::Shader;
+use crate::rubik::Move;
 use crate::world::{new_entity, new_group, Node, NodeRef};
 use rand::Rng;
-use std::convert::From;
 use std::f32::consts::PI;
 use std::sync::Arc;
 use tween::{SineInOut, Tweener};
 use wgpu::Device;
 
-#[derive(Clone, Copy)]
-pub enum Move {
-    TOP,
-    BOTTOM,
-    LEFT,
-    RIGHT,
-    FRONT,
-    BACK,
-    NONE,
-}
+const CUBE_SIZE: f32 = 2.0;
+const CUBE_MARGIN: f32 = 0.15;
 
-impl From<i32> for Move {
-    fn from(v: i32) -> Self {
-        match v {
-            0 => Move::TOP,
-            1 => Move::BOTTOM,
-            2 => Move::LEFT,
-            3 => Move::RIGHT,
-            4 => Move::FRONT,
-            5 => Move::BACK,
-            _ => Move::NONE,
-        }
-    }
-}
 pub struct Rubik {
     pieces: Vec<NodeRef>,
     tween: Tweener<f32, f32, SineInOut>,
@@ -41,8 +20,7 @@ pub struct Rubik {
     static_root: NodeRef,
     span: usize,
 }
-const CUBE_SIZE: f32 = 2.0;
-const CUBE_MARGIN: f32 = 0.15;
+
 impl Rubik {
     pub fn new() -> Self {
         let moving_pivot = new_group();
@@ -53,7 +31,7 @@ impl Rubik {
         Self {
             pieces: Vec::new(),
             tween: Tweener::sine_in_out(0.0, PI * 2.0, 5.0),
-            current_move: Move::NONE,
+            current_move: Move::None,
             root,
             moving_pivot,
             static_root,
@@ -98,7 +76,7 @@ impl Rubik {
         let size = CUBE_SIZE + CUBE_MARGIN;
         let depth = rng.gen_range(1..self.span * 2) as f32 * size * 0.5;
         match self.current_move {
-            Move::TOP => {
+            Move::Top => {
                 for piece in self.static_root.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) - piece.get_translation().z;
                     layer < depth
@@ -106,7 +84,7 @@ impl Rubik {
                     self.moving_pivot.add_child(piece.clone());
                 }
             }
-            Move::BOTTOM => {
+            Move::Bottom => {
                 for piece in self.static_root.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) + piece.get_translation().z;
                     layer < depth
@@ -114,7 +92,7 @@ impl Rubik {
                     self.moving_pivot.add_child(piece.clone());
                 }
             }
-            Move::LEFT => {
+            Move::Left => {
                 for piece in self.static_root.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) + piece.get_translation().x;
                     layer < depth
@@ -122,7 +100,7 @@ impl Rubik {
                     self.moving_pivot.add_child(piece.clone());
                 }
             }
-            Move::RIGHT => {
+            Move::Right => {
                 for piece in self.static_root.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) - piece.get_translation().x;
                     layer < depth
@@ -130,7 +108,7 @@ impl Rubik {
                     self.moving_pivot.add_child(piece.clone());
                 }
             }
-            Move::FRONT => {
+            Move::Front => {
                 for piece in self.static_root.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) - piece.get_translation().y;
                     layer < depth
@@ -138,7 +116,7 @@ impl Rubik {
                     self.moving_pivot.add_child(piece.clone());
                 }
             }
-            Move::BACK => {
+            Move::Back => {
                 for piece in self.static_root.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) + piece.get_translation().y;
                     layer < depth
@@ -166,22 +144,22 @@ impl Rubik {
     pub fn update(&mut self, delta_time: f32) {
         let alpha = self.tween.move_by(delta_time);
         match self.current_move {
-            Move::TOP => {
+            Move::Top => {
                 self.moving_pivot.rotate_z(alpha);
             }
-            Move::BOTTOM => {
+            Move::Bottom => {
                 self.moving_pivot.rotate_z(alpha);
             }
-            Move::LEFT => {
+            Move::Left => {
                 self.moving_pivot.rotate_x(alpha);
             }
-            Move::RIGHT => {
+            Move::Right => {
                 self.moving_pivot.rotate_x(alpha);
             }
-            Move::FRONT => {
+            Move::Front => {
                 self.moving_pivot.rotate_y(alpha);
             }
-            Move::BACK => {
+            Move::Back => {
                 self.moving_pivot.rotate_y(alpha);
             }
             _ => {}

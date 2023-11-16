@@ -1,3 +1,4 @@
-pub mod rubik;
-pub use rubik::Move;
-pub use rubik::Rubik;
+pub mod rubik_cube;
+pub mod rubik_move;
+pub use rubik_cube::Rubik;
+pub use rubik_move::Move;

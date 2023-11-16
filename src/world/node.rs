@@ -80,7 +80,7 @@ pub trait Node {
 }
 impl Node for NodeData {
     fn get_translation(&self) -> Vec3 {
-        return self.translation.clone();
+        self.translation
     }
     fn translate(&mut self, x: f32, y: f32, z: f32) {
         self.translation = Vec3::new(x, y, z);
@@ -140,7 +140,7 @@ impl Node for NodeData {
                 i += 1;
             }
         }
-        return ret;
+        ret
     }
     fn extract_child(&mut self) -> Vec<NodeRef> {
         let ret = self.children.clone();
@@ -151,10 +151,11 @@ impl Node for NodeData {
 impl Node for NodeRef {
     fn get_translation(&self) -> Vec3 {
         if let Ok(node) = self.lock() {
-            return node.translation.clone();
+            node.translation
+        } else {
+            eprintln!("Something went wrong!");
+            Vec3::ZERO
         }
-        eprintln!("Something went wrong!");
-        return Vec3::ZERO;
     }
     fn translate(&mut self, x: f32, y: f32, z: f32) {
         if let Ok(mut node) = self.lock() {
@@ -223,14 +224,16 @@ impl Node for NodeRef {
         F: Fn(&NodeRef) -> bool,
     {
         if let Ok(mut node) = self.lock() {
-            return node.extract_child_if(filter);
+            node.extract_child_if(filter)
+        } else {
+            Vec::new()
         }
-        return Vec::new();
     }
     fn extract_child(&mut self) -> Vec<NodeRef> {
         if let Ok(mut node) = self.lock() {
-            return node.extract_child();
+            node.extract_child()
+        } else {
+            Vec::new()
         }
-        return Vec::new();
     }
 }

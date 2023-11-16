@@ -1,4 +1,4 @@
-use hello_wgpu::run;
+use rubik::run;
 use winit::event_loop::EventLoop;
 use winit::window::Window;
 fn main() {

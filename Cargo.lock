@@ -601,21 +601,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hello-wgpu"
-version = "0.4.0"
-dependencies = [
- "bytemuck",
- "env_logger",
- "glam 0.24.2",
- "log",
- "pollster",
- "rand",
- "tween",
- "wgpu",
- "winit",
-]
-
-[[package]]
 name = "hermit-abi"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1259,6 +1244,21 @@ name = "renderdoc-sys"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "216080ab382b992234dda86873c18d4c48358f5cfcb70fd693d7f6f2131b628b"
+
+[[package]]
+name = "rubik"
+version = "0.5.0"
+dependencies = [
+ "bytemuck",
+ "env_logger",
+ "glam 0.24.2",
+ "log",
+ "pollster",
+ "rand",
+ "tween",
+ "wgpu",
+ "winit",
+]
 
 [[package]]
 name = "rustc-demangle"
