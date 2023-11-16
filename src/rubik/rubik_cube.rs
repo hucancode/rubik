@@ -60,6 +60,16 @@ impl Rubik {
                     let faced_right = x == n;
                     let faced_front = y == n;
                     let faced_back = y == -n;
+                    let visible = faced_top
+                        || faced_bottom
+                        || faced_left
+                        || faced_left
+                        || faced_right
+                        || faced_front
+                        || faced_back;
+                    if !visible {
+                        continue;
+                    }
                     let rubik_mesh = Arc::new(Mesh::new_rubik_piece(
                         device,
                         faced_top,
