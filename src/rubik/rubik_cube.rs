@@ -30,18 +30,18 @@ pub struct Rubik {
 
 impl Rubik {
     pub fn new() -> Self {
-        let moving_pivot = new_group();
-        let static_root = new_group();
+        let moving_cubes = new_group();
+        let static_cubes = new_group();
         let mut root = new_group();
-        root.add_child(moving_pivot.clone());
-        root.add_child(static_root.clone());
+        root.add_child(moving_cubes.clone());
+        root.add_child(static_cubes.clone());
         Self {
             pieces: Vec::new(),
             tween: Tweener::new(0.0, PI * 2.0, 2.0, Box::new(Linear)),
             current_move: Move::None,
             root,
-            moving_pivot,
-            static_root,
+            moving_pivot: moving_cubes,
+            static_root: static_cubes,
             span: 0,
         }
     }
