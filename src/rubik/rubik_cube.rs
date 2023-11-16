@@ -19,7 +19,6 @@ const CUBE_MARGIN: f32 = 0.15;
 type GenericTween = Tweener<f32, f32, Box<dyn Tween<f32>>>;
 
 pub struct Rubik {
-    pieces: Vec<NodeRef>,
     tween: GenericTween,
     current_move: Move,
     pub root: NodeRef,
@@ -36,7 +35,6 @@ impl Rubik {
         root.add_child(moving_cubes.clone());
         root.add_child(static_cubes.clone());
         Self {
-            pieces: Vec::new(),
             tween: Tweener::new(0.0, PI * 2.0, 2.0, Box::new(Linear)),
             current_move: Move::None,
             root,
@@ -50,7 +48,6 @@ impl Rubik {
         let d = CUBE_SIZE + CUBE_MARGIN;
         self.span = span;
         let n = span as i32;
-        self.pieces.clear();
         for z in -n..=n {
             for y in -n..=n {
                 for x in -n..=n {
@@ -80,7 +77,6 @@ impl Rubik {
                         faced_back,
                     ));
                     let mut cube = new_entity(rubik_mesh, shader.clone());
-                    self.pieces.push(cube.clone());
                     self.static_root.add_child(cube.clone());
                     cube.translate(d * x as f32, d * y as f32, d * z as f32);
                 }

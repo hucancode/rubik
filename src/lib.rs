@@ -18,6 +18,9 @@ pub async fn run(event_loop: EventLoop<()>, window: Window) {
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Poll;
         match event {
+            Event::NewEvents(StartCause::Init) => {
+                app.init();
+            }
             Event::NewEvents(StartCause::Poll) => {
                 let delta_time = 0.001 * last_update_timestamp.elapsed().as_millis() as f32;
                 let time = app_start_timestamp.elapsed().as_millis();

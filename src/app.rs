@@ -5,6 +5,7 @@ use crate::world::{new_entity, new_light, Node, NodeRef, Renderer};
 use glam::Vec4;
 use std::f32::consts::PI;
 use std::sync::Arc;
+use std::time::Instant;
 use winit::window::Window;
 
 const LIGHT_RADIUS: f32 = 10.0;
@@ -18,16 +19,23 @@ pub struct App {
 
 impl App {
     pub async fn new(window: &Window) -> Self {
-        let mut renderer = Renderer::new(window).await;
-        let cube_mesh = Arc::new(Mesh::new_cube(0xcba6f7ff, &renderer.device));
+        let renderer = Renderer::new(window).await;
+        Self {
+            renderer,
+            lights: Vec::new(),
+            rubik: Rubik::new(),
+        }
+    }
+    pub fn init(&mut self) {
+        let app_init_timestamp = Instant::now();
+        let cube_mesh = Arc::new(Mesh::new_cube(0xcba6f7ff, &self.renderer.device));
         let shader = Arc::new(Shader::new(
-            &renderer.device,
+            &self.renderer.device,
             include_str!("material/shader.wgsl"),
         ));
-        let mut rubik = Rubik::new();
-        rubik.generate_pieces(1, &renderer.device);
-        rubik.start_move_random();
-        renderer.root.add_child(rubik.root.clone());
+        self.rubik.generate_pieces(1, &self.renderer.device);
+        self.rubik.start_move_random();
+        self.renderer.root.add_child(self.rubik.root.clone());
         let lights = vec![
             (
                 wgpu::Color {
@@ -63,7 +71,7 @@ impl App {
                 4400,
             ),
         ];
-        let lights = lights
+        self.lights = lights
             .into_iter()
             .map(|(color, radius, intensity, time_offset)| {
                 let mut cube = new_entity(cube_mesh.clone(), shader.clone());
@@ -71,15 +79,11 @@ impl App {
                 cube.translate(1.0, 1.0, 1.0);
                 let mut light = new_light(color, radius * intensity);
                 light.add_child(cube.clone());
-                renderer.root.add_child(light.clone());
+                self.renderer.root.add_child(light.clone());
                 (light, cube, time_offset)
             })
             .collect();
-        Self {
-            renderer,
-            lights,
-            rubik,
-        }
+        println!("app initialized in {:?}", app_init_timestamp.elapsed());
     }
     pub fn update(&mut self, delta_time: f32, time: u128) {
         for (light, cube, time_offset) in self.lights.iter_mut() {

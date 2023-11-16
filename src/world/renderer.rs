@@ -4,6 +4,7 @@ use crate::world::{node, Camera, Light, Node, NodeRef};
 use glam::{Mat4, Vec4};
 use std::cmp::max;
 use std::mem::size_of;
+use std::time::Instant;
 use wgpu::util::{align_to, BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
@@ -50,9 +51,12 @@ pub struct Renderer {
 
 impl Renderer {
     pub async fn new(window: &Window) -> Renderer {
+        let new_renderer_timestamp = Instant::now();
         let size = window.inner_size();
         let instance = Instance::default();
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
+        println!("created surface in {:?}", new_renderer_timestamp.elapsed());
+        let device_request_timestamp = Instant::now();
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
                 power_preference: PowerPreference::default(),
@@ -61,7 +65,6 @@ impl Renderer {
             })
             .await
             .expect("Failed to find an appropriate adapter");
-
         // Create the logical device and command queue
         let (device, queue) = adapter
             .request_device(
@@ -74,7 +77,10 @@ impl Renderer {
             )
             .await
             .expect("Failed to create device");
-
+        println!(
+            "requested device in {:?}",
+            device_request_timestamp.elapsed()
+        );
         let swapchain_capabilities = surface.get_capabilities(&adapter);
         let swapchain_format = swapchain_capabilities.formats[0];
         let config = SurfaceConfiguration {
@@ -87,7 +93,7 @@ impl Renderer {
             view_formats: vec![],
         };
         surface.configure(&device, &config);
-
+        let new_shader_timestamp = Instant::now();
         let bind_group_layout_camera =
             device.create_bind_group_layout(&BindGroupLayoutDescriptor {
                 label: None,
@@ -157,6 +163,8 @@ impl Renderer {
         });
 
         let shader = Shader::new(&device, include_str!("../material/shader.wgsl"));
+        println!("created shader in {:?}", new_shader_timestamp.elapsed());
+        let new_pipeline_timestamp = Instant::now();
 
         let depth_texture = device.create_texture(&TextureDescriptor {
             size: Extent3d {
@@ -172,9 +180,7 @@ impl Renderer {
             label: None,
             view_formats: &[],
         });
-
         let depth_texture_view = depth_texture.create_view(&TextureViewDescriptor::default());
-
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
             layout: Some(&pipeline_layout),
@@ -211,7 +217,6 @@ impl Renderer {
             contents: bytemuck::cast_slice(vp_ref),
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
         });
-
         let light_uniform_size = size_of::<Light>() as BufferAddress;
         let light_buffer = device.create_buffer(&BufferDescriptor {
             label: Some("Light Buffer"),
@@ -225,7 +230,6 @@ impl Renderer {
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
-
         let bind_group_camera = device.create_bind_group(&BindGroupDescriptor {
             layout: &bind_group_layout_camera,
             entries: &[
@@ -244,7 +248,6 @@ impl Renderer {
             ],
             label: None,
         });
-
         let node_uniform_size = size_of::<Mat4>() as BufferAddress;
         let node_uniform_aligned = {
             let alignment = device.limits().min_uniform_buffer_offset_alignment as BufferAddress;
@@ -284,6 +287,11 @@ impl Renderer {
             ],
             label: None,
         });
+        println!("created pipeline in {:?}", new_pipeline_timestamp.elapsed());
+        println!(
+            "in total, created new renderer in {:?}",
+            new_renderer_timestamp.elapsed()
+        );
         Self {
             camera: Camera::new(),
             root: node::new_group(),
