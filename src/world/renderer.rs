@@ -65,7 +65,6 @@ impl Renderer {
             })
             .await
             .expect("Failed to find an appropriate adapter");
-        // Create the logical device and command queue
         let (device, queue) = adapter
             .request_device(
                 &DeviceDescriptor {
