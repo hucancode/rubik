@@ -5,15 +5,22 @@ use crate::world::{new_entity, new_group, Node, NodeRef};
 use rand::Rng;
 use std::f32::consts::PI;
 use std::sync::Arc;
-use tween::{SineInOut, Tweener};
+use tween::{
+    BackIn, BackInOut, BackOut, BounceIn, BounceInOut, BounceOut, CircIn, CircInOut, CircOut,
+    CubicIn, CubicInOut, CubicOut, ElasticIn, ElasticInOut, ElasticOut, ExpoIn, ExpoInOut, ExpoOut,
+    Linear, QuadIn, QuadInOut, QuadOut, QuintIn, QuintInOut, QuintOut, SineIn, SineInOut, SineOut,
+    Tween, Tweener,
+};
 use wgpu::Device;
 
 const CUBE_SIZE: f32 = 2.0;
 const CUBE_MARGIN: f32 = 0.15;
 
+type SendSyncTween<Value, Time> = Tweener<Value, Time, Box<dyn Tween<Value> + Send + Sync>>;
+
 pub struct Rubik {
     pieces: Vec<NodeRef>,
-    tween: Tweener<f32, f32, SineInOut>,
+    tween: SendSyncTween<f32, f32>,
     current_move: Move,
     pub root: NodeRef,
     moving_pivot: NodeRef,
@@ -30,7 +37,7 @@ impl Rubik {
         root.add_child(static_root.clone());
         Self {
             pieces: Vec::new(),
-            tween: Tweener::sine_in_out(0.0, PI * 2.0, 5.0),
+            tween: Tweener::new(0.0, PI * 2.0, 5.0, Box::new(Linear)),
             current_move: Move::None,
             root,
             moving_pivot,
@@ -127,7 +134,36 @@ impl Rubik {
             _ => {}
         };
         let rotate_amount = PI * 0.5 * rng.gen_range(1..=3) as f32;
-        self.tween = Tweener::sine_in_out(0.0, rotate_amount, 2.0);
+        match rng.gen_range(0..28) {
+            0 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(BackIn)),
+            1 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(BackInOut)),
+            2 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(BackOut)),
+            3 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(BounceIn)),
+            4 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(BounceInOut)),
+            5 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(BounceOut)),
+            6 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(CircIn)),
+            7 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(CircInOut)),
+            8 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(CircOut)),
+            9 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(CubicIn)),
+            10 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(CubicInOut)),
+            11 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(CubicOut)),
+            12 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(ElasticIn)),
+            13 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(ElasticInOut)),
+            14 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(ElasticOut)),
+            15 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(ExpoIn)),
+            16 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(ExpoInOut)),
+            17 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(ExpoOut)),
+            18 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(QuadIn)),
+            19 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(QuadInOut)),
+            20 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(QuadOut)),
+            21 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(QuintIn)),
+            22 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(QuintInOut)),
+            23 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(QuintOut)),
+            24 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(SineIn)),
+            25 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(SineInOut)),
+            26 => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(SineOut)),
+            _ => self.tween = Tweener::new(0.0, rotate_amount, 2.0, Box::new(Linear)),
+        };
     }
     pub fn finish_move(&mut self) {
         let mat = self.moving_pivot.calculate_transform();

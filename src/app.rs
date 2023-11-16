@@ -8,6 +8,7 @@ use std::sync::Arc;
 use winit::window::Window;
 
 const LIGHT_RADIUS: f32 = 10.0;
+const LIGHT_INTENSITY: f32 = 2.5;
 
 pub struct App {
     renderer: Renderer,
@@ -36,6 +37,7 @@ impl App {
                     a: 1.0,
                 },
                 LIGHT_RADIUS,
+                LIGHT_INTENSITY,
                 0,
             ),
             (
@@ -46,6 +48,7 @@ impl App {
                     a: 1.0,
                 },
                 LIGHT_RADIUS,
+                LIGHT_INTENSITY,
                 2200,
             ),
             (
@@ -56,16 +59,17 @@ impl App {
                     a: 1.0,
                 },
                 LIGHT_RADIUS,
+                LIGHT_INTENSITY,
                 4400,
             ),
         ];
         let lights = lights
             .into_iter()
-            .map(|(color, radius, time_offset)| {
+            .map(|(color, radius, intensity, time_offset)| {
                 let mut cube = new_entity(cube_mesh.clone(), shader.clone());
                 cube.scale_uniform(0.7);
                 cube.translate(1.0, 1.0, 1.0);
-                let mut light = new_light(color, radius);
+                let mut light = new_light(color, radius * intensity);
                 light.add_child(cube.clone());
                 renderer.root.add_child(light.clone());
                 (light, cube, time_offset)
@@ -91,6 +95,7 @@ impl App {
             light.translate(v.x, v.y, v.z);
         }
         self.rubik.update(delta_time);
+        self.rubik.root.rotate_z((0.0003 * time as f64) as f32);
     }
 
     pub fn resize(&mut self, width: u32, height: u32) {
