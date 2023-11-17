@@ -22,8 +22,8 @@ pub struct Rubik {
     tween: GenericTween,
     current_move: Move,
     pub root: NodeRef,
-    moving_pivot: NodeRef,
-    static_root: NodeRef,
+    moving_pieces: NodeRef,
+    static_pieces: NodeRef,
     span: usize,
 }
 
@@ -38,8 +38,8 @@ impl Rubik {
             tween: Tweener::new(0.0, PI * 2.0, 2.0, Box::new(Linear)),
             current_move: Move::None,
             root,
-            moving_pivot: moving_cubes,
-            static_root: static_cubes,
+            moving_pieces: moving_cubes,
+            static_pieces: static_cubes,
             span: 0,
         }
     }
@@ -77,7 +77,7 @@ impl Rubik {
                         faced_back,
                     ));
                     let mut cube = new_entity(rubik_mesh, shader.clone());
-                    self.static_root.add_child(cube.clone());
+                    self.static_pieces.add_child(cube.clone());
                     cube.translate(d * x as f32, d * y as f32, d * z as f32);
                 }
             }
@@ -90,51 +90,51 @@ impl Rubik {
         let depth = rng.gen_range(1..self.span * 2) as f32 * size * 0.5;
         match self.current_move {
             Move::Top => {
-                for piece in self.static_root.extract_child_if(|piece| {
+                for piece in self.static_pieces.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) - piece.get_translation().z;
                     layer < depth
                 }) {
-                    self.moving_pivot.add_child(piece.clone());
+                    self.moving_pieces.add_child(piece.clone());
                 }
             }
             Move::Bottom => {
-                for piece in self.static_root.extract_child_if(|piece| {
+                for piece in self.static_pieces.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) + piece.get_translation().z;
                     layer < depth
                 }) {
-                    self.moving_pivot.add_child(piece.clone());
+                    self.moving_pieces.add_child(piece.clone());
                 }
             }
             Move::Left => {
-                for piece in self.static_root.extract_child_if(|piece| {
+                for piece in self.static_pieces.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) + piece.get_translation().x;
                     layer < depth
                 }) {
-                    self.moving_pivot.add_child(piece.clone());
+                    self.moving_pieces.add_child(piece.clone());
                 }
             }
             Move::Right => {
-                for piece in self.static_root.extract_child_if(|piece| {
+                for piece in self.static_pieces.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) - piece.get_translation().x;
                     layer < depth
                 }) {
-                    self.moving_pivot.add_child(piece.clone());
+                    self.moving_pieces.add_child(piece.clone());
                 }
             }
             Move::Front => {
-                for piece in self.static_root.extract_child_if(|piece| {
+                for piece in self.static_pieces.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) - piece.get_translation().y;
                     layer < depth
                 }) {
-                    self.moving_pivot.add_child(piece.clone());
+                    self.moving_pieces.add_child(piece.clone());
                 }
             }
             Move::Back => {
-                for piece in self.static_root.extract_child_if(|piece| {
+                for piece in self.static_pieces.extract_child_if(|piece| {
                     let layer = size * (self.span as f32) + piece.get_translation().y;
                     layer < depth
                 }) {
-                    self.moving_pivot.add_child(piece.clone());
+                    self.moving_pieces.add_child(piece.clone());
                 }
             }
             _ => {}
@@ -175,37 +175,37 @@ impl Rubik {
         };
     }
     pub fn finish_move(&mut self) {
-        let mat = self.moving_pivot.calculate_transform();
-        for mut piece in self.moving_pivot.extract_all_child() {
+        let mat = self.moving_pieces.calculate_transform();
+        for mut piece in self.moving_pieces.extract_all_child() {
             let mat = mat * piece.calculate_transform();
             let (_scale, rotation, translation) = mat.to_scale_rotation_translation();
             piece.translate(translation.x, translation.y, translation.z);
             piece.rotate_quat(rotation);
-            self.static_root.add_child(piece);
+            self.static_pieces.add_child(piece);
         }
-        self.moving_pivot.rotate(0.0, 0.0, 0.0);
+        self.moving_pieces.rotate(0.0, 0.0, 0.0);
         self.start_move_random();
     }
     pub fn update(&mut self, delta_time: f32) {
         let alpha = self.tween.move_by(delta_time);
         match self.current_move {
             Move::Top => {
-                self.moving_pivot.rotate_z(alpha);
+                self.moving_pieces.rotate_z(alpha);
             }
             Move::Bottom => {
-                self.moving_pivot.rotate_z(alpha);
+                self.moving_pieces.rotate_z(alpha);
             }
             Move::Left => {
-                self.moving_pivot.rotate_x(alpha);
+                self.moving_pieces.rotate_x(alpha);
             }
             Move::Right => {
-                self.moving_pivot.rotate_x(alpha);
+                self.moving_pieces.rotate_x(alpha);
             }
             Move::Front => {
-                self.moving_pivot.rotate_y(alpha);
+                self.moving_pieces.rotate_y(alpha);
             }
             Move::Back => {
-                self.moving_pivot.rotate_y(alpha);
+                self.moving_pieces.rotate_y(alpha);
             }
             _ => {}
         };
