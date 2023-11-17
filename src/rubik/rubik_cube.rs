@@ -176,7 +176,7 @@ impl Rubik {
     }
     pub fn finish_move(&mut self) {
         let mat = self.moving_pivot.calculate_transform();
-        for mut piece in self.moving_pivot.extract_child() {
+        for mut piece in self.moving_pivot.extract_all_child() {
             let mat = mat * piece.calculate_transform();
             let (_scale, rotation, translation) = mat.to_scale_rotation_translation();
             piece.translate(translation.x, translation.y, translation.z);

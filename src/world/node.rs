@@ -74,7 +74,7 @@ pub trait Node {
     fn extract_child_if<F>(&mut self, filter: F) -> Vec<NodeRef>
     where
         F: Fn(&NodeRef) -> bool;
-    fn extract_child(&mut self) -> Vec<NodeRef> {
+    fn extract_all_child(&mut self) -> Vec<NodeRef> {
         self.extract_child_if(|_| true)
     }
 }
@@ -142,7 +142,7 @@ impl Node for NodeData {
         }
         ret
     }
-    fn extract_child(&mut self) -> Vec<NodeRef> {
+    fn extract_all_child(&mut self) -> Vec<NodeRef> {
         let ret = self.children.clone();
         self.children = Vec::new();
         ret
@@ -229,9 +229,9 @@ impl Node for NodeRef {
             Vec::new()
         }
     }
-    fn extract_child(&mut self) -> Vec<NodeRef> {
+    fn extract_all_child(&mut self) -> Vec<NodeRef> {
         if let Ok(mut node) = self.lock() {
-            node.extract_child()
+            node.extract_all_child()
         } else {
             Vec::new()
         }
