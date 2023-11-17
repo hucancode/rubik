@@ -11,5 +11,5 @@ You can follow the progress by tracking release tags:
 
 # Final result
 
-https://github.com/hucancode/rubik/assets/15852849/cbcbe98e-46a7-44fd-bc14-6dc636c4f1f4
+https://github.com/hucancode/rubik/assets/15852849/7425ed37-4940-44d3-a850-02508f8bb5b2
 
