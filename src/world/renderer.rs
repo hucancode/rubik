@@ -378,8 +378,7 @@ impl Renderer {
             let mut q = Vec::new();
             q.push((self.root.clone(), Mat4::IDENTITY));
             while let Some((node, transform_mx)) = q.pop() {
-                let node = node.lock().unwrap();
-                match &node.variant {
+                match &node.borrow().variant {
                     node::Variant::Entity(geometry, shader) => {
                         let (_scale, rotation, _translation) =
                             transform_mx.to_scale_rotation_translation();
@@ -391,7 +390,7 @@ impl Renderer {
                     }
                     _ => {}
                 }
-                for child in node.children.iter() {
+                for child in node.borrow().children.iter() {
                     let transform_mx = transform_mx * child.calculate_transform();
                     q.push((child.clone(), transform_mx));
                 }

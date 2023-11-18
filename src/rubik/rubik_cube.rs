@@ -4,7 +4,7 @@ use crate::rubik::Move;
 use crate::world::{new_entity, new_group, Node, NodeRef};
 use rand::Rng;
 use std::f32::consts::PI;
-use std::sync::Arc;
+use std::rc::Rc;
 use tween::{
     BackIn, BackInOut, BackOut, BounceIn, BounceInOut, BounceOut, CircIn, CircInOut, CircOut,
     CubicIn, CubicInOut, CubicOut, ElasticIn, ElasticInOut, ElasticOut, ExpoIn, ExpoInOut, ExpoOut,
@@ -44,7 +44,7 @@ impl Rubik {
         }
     }
     pub fn generate_pieces(&mut self, span: usize, device: &Device) {
-        let shader = Arc::new(Shader::new(device, include_str!("../material/shader.wgsl")));
+        let shader = Rc::new(Shader::new(device, include_str!("../material/shader.wgsl")));
         let d = CUBE_SIZE + CUBE_MARGIN;
         self.span = span;
         let n = span as i32;
@@ -67,7 +67,7 @@ impl Rubik {
                     if !visible {
                         continue;
                     }
-                    let rubik_mesh = Arc::new(Mesh::new_rubik_piece(
+                    let rubik_mesh = Rc::new(Mesh::new_rubik_piece(
                         device,
                         faced_top,
                         faced_bottom,

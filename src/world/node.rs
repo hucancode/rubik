@@ -1,15 +1,15 @@
 use crate::geometry::Mesh;
 use crate::material::Shader;
 use glam::{f32::Quat, EulerRot, Mat4, Vec3};
-use std::sync::{Arc, Mutex};
+use std::{cell::RefCell, rc::Rc};
 
 pub enum Variant {
-    Entity(Arc<Mesh>, Arc<Shader>),
+    Entity(Rc<Mesh>, Rc<Shader>),
     Light(wgpu::Color, f32),
     Group,
 }
 
-pub type NodeRef = Arc<Mutex<NodeData>>;
+pub type NodeRef = Rc<RefCell<NodeData>>;
 
 pub struct NodeData {
     pub translation: Vec3,
@@ -34,18 +34,18 @@ impl Default for NodeData {
 }
 
 pub fn new_group() -> NodeRef {
-    Arc::new(Mutex::new(NodeData::default()))
+    Rc::new(RefCell::new(NodeData::default()))
 }
 
 pub fn new_light(color: wgpu::Color, radius: f32) -> NodeRef {
-    Arc::new(Mutex::new(NodeData {
+    Rc::new(RefCell::new(NodeData {
         variant: Variant::Light(color, radius),
         ..Default::default()
     }))
 }
 
-pub fn new_entity(geometry: Arc<Mesh>, shader: Arc<Shader>) -> NodeRef {
-    Arc::new(Mutex::new(NodeData {
+pub fn new_entity(geometry: Rc<Mesh>, shader: Rc<Shader>) -> NodeRef {
+    Rc::new(RefCell::new(NodeData {
         variant: Variant::Entity(geometry, shader),
         ..Default::default()
     }))
@@ -150,17 +150,10 @@ impl Node for NodeData {
 }
 impl Node for NodeRef {
     fn get_translation(&self) -> Vec3 {
-        if let Ok(node) = self.lock() {
-            node.translation
-        } else {
-            eprintln!("Something went wrong!");
-            Vec3::ZERO
-        }
+        self.borrow().translation
     }
     fn translate(&mut self, x: f32, y: f32, z: f32) {
-        if let Ok(mut node) = self.lock() {
-            node.translate(x, y, z)
-        }
+        self.borrow_mut().translate(x, y, z)
     }
     fn translate_x(&mut self, x: f32) {
         self.translate(x, 0.0, 0.0)
@@ -172,9 +165,7 @@ impl Node for NodeRef {
         self.translate(0.0, 0.0, z)
     }
     fn scale(&mut self, x: f32, y: f32, z: f32) {
-        if let Ok(mut node) = self.lock() {
-            node.scale(x, y, z)
-        }
+        self.borrow_mut().scale(x, y, z)
     }
     fn scale_x(&mut self, x: f32) {
         self.scale(x, 0.0, 0.0)
@@ -186,14 +177,10 @@ impl Node for NodeRef {
         self.scale(0.0, 0.0, z)
     }
     fn rotate_quat(&mut self, q: Quat) {
-        if let Ok(mut node) = self.lock() {
-            node.rotate_quat(q);
-        }
+        self.borrow_mut().rotate_quat(q);
     }
     fn rotate(&mut self, x: f32, y: f32, z: f32) {
-        if let Ok(mut node) = self.lock() {
-            node.rotate(x, y, z)
-        }
+        self.borrow_mut().rotate(x, y, z)
     }
     fn rotate_x(&mut self, x: f32) {
         self.rotate(x, 0.0, 0.0);
@@ -205,35 +192,20 @@ impl Node for NodeRef {
         self.rotate(0.0, 0.0, z);
     }
     fn calculate_transform(&self) -> Mat4 {
-        if let Ok(node) = self.lock() {
-            Mat4::from_scale_rotation_translation(node.scale, node.rotation, node.translation)
-        } else {
-            Mat4::IDENTITY
-        }
+        let node = self.borrow();
+        Mat4::from_scale_rotation_translation(node.scale, node.rotation, node.translation)
     }
     fn add_child(&mut self, child: NodeRef) {
-        if let Ok(mut node) = self.lock() {
-            if let Ok(mut child_mtx) = child.clone().lock() {
-                node.children.push(child);
-                child_mtx.parent = Some(self.clone());
-            }
-        }
+        self.borrow_mut().children.push(child.clone());
+        child.borrow_mut().parent = Some(self.clone());
     }
     fn extract_child_if<F>(&mut self, filter: F) -> Vec<NodeRef>
     where
         F: Fn(&NodeRef) -> bool,
     {
-        if let Ok(mut node) = self.lock() {
-            node.extract_child_if(filter)
-        } else {
-            Vec::new()
-        }
+        self.borrow_mut().extract_child_if(filter)
     }
     fn extract_all_child(&mut self) -> Vec<NodeRef> {
-        if let Ok(mut node) = self.lock() {
-            node.extract_all_child()
-        } else {
-            Vec::new()
-        }
+        self.borrow_mut().extract_all_child()
     }
 }

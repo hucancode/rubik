@@ -4,7 +4,7 @@ use crate::rubik::Rubik;
 use crate::world::{new_entity, new_light, Node, NodeRef, Renderer};
 use glam::Vec4;
 use std::f32::consts::PI;
-use std::sync::Arc;
+use std::rc::Rc;
 use std::time::Instant;
 use winit::window::Window;
 
@@ -28,8 +28,8 @@ impl App {
     }
     pub fn init(&mut self) {
         let app_init_timestamp = Instant::now();
-        let cube_mesh = Arc::new(Mesh::new_cube(0xcba6f7ff, &self.renderer.device));
-        let shader = Arc::new(Shader::new(
+        let cube_mesh = Rc::new(Mesh::new_cube(0xcba6f7ff, &self.renderer.device));
+        let shader = Rc::new(Shader::new(
             &self.renderer.device,
             include_str!("material/shader.wgsl"),
         ));
@@ -88,13 +88,13 @@ impl App {
     pub fn update(&mut self, delta_time: f32, time: u128) {
         for (light, cube, time_offset) in self.lights.iter_mut() {
             let time = time + *time_offset;
-            let rx = PI * 2.0 * ((time as f64) * 0.00042).sin() as f32;
-            let ry = PI * 2.0 * ((time as f64) * 0.00011).sin() as f32;
-            let rz = PI * 2.0 * ((time as f64) * 0.00027).sin() as f32;
+            let rx = PI * 2.0 * (0.00042 * time as f64).sin() as f32;
+            let ry = PI * 2.0 * (0.00011 * time as f64).sin() as f32;
+            let rz = PI * 2.0 * (0.00027 * time as f64).sin() as f32;
             cube.rotate(rx, ry, rz);
-            let x = 4.0 * (time as f64 / 1700.0).sin() as f32;
-            let y = 4.0 * (time as f64 / 1300.0).sin() as f32;
-            let z = 4.0 * (time as f64 / 700.0).sin() as f32;
+            let x = 4.0 * (0.00058 * time as f64).sin() as f32;
+            let y = 4.0 * (0.00076 * time as f64).sin() as f32;
+            let z = 4.0 * (0.00142 * time as f64).sin() as f32;
             let v = Vec4::new(x, y, z, 1.0).normalize() * LIGHT_RADIUS;
             light.translate(v.x, v.y, v.z);
         }
