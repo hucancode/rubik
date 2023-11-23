@@ -14,9 +14,7 @@ use wgpu::{
 };
 
 use crate::geometry::Vertex;
-use crate::world::{Light, Renderer};
-
-const MAX_ENTITY: u64 = 100000;
+use crate::world::{Light, Renderer, MAX_ENTITY};
 
 pub struct ShaderUnlit {
     pub module: ShaderModule,

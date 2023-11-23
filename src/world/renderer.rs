@@ -13,6 +13,8 @@ use wgpu::{
 };
 use winit::window::Window;
 
+pub const MAX_ENTITY: u64 = 100000;
+pub const MAX_LIGHT: u64 = 10;
 const CLEAR_COLOR: Color = Color {
     r: 0.01233333333,
     g: 0.01233333333,

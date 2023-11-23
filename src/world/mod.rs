@@ -10,3 +10,5 @@ pub use node::new_light;
 pub use node::Node;
 pub use node::NodeRef;
 pub use renderer::Renderer;
+pub use renderer::MAX_ENTITY;
+pub use renderer::MAX_LIGHT;

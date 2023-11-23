@@ -14,10 +14,8 @@ use wgpu::{
 };
 
 use crate::geometry::Vertex;
-use crate::world::{Light, Renderer};
+use crate::world::{Light, Renderer, MAX_LIGHT, MAX_ENTITY};
 
-const MAX_ENTITY: u64 = 100000;
-const MAX_LIGHT: u64 = 10;
 pub struct ShaderLit {
     pub module: ShaderModule,
     pub render_pipeline: RenderPipeline,
