@@ -36,7 +36,7 @@ impl Mesh {
             Vertex::new([-1.0, -1.0, -1.0], [0.0, -1.0, 0.0], col),
             Vertex::new([1.0, -1.0, -1.0], [0.0, -1.0, 0.0], col),
         ];
-        let index_data: &[u16] = &[
+        let index_data: &[u32] = &[
             0, 1, 2, 2, 3, 0, // top
             4, 5, 6, 6, 7, 4, // bottom
             8, 9, 10, 10, 11, 8, // right

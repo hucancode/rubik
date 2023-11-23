@@ -4,7 +4,7 @@ use glam::{f32::Quat, EulerRot, Mat4, Vec3};
 use std::{cell::RefCell, rc::Rc};
 
 pub enum Variant {
-    Entity(Rc<Mesh>, Rc<Shader>),
+    Entity(Rc<Mesh>, Rc<dyn Shader>),
     Light(wgpu::Color, f32),
     Group,
 }
@@ -44,7 +44,7 @@ pub fn new_light(color: wgpu::Color, radius: f32) -> NodeRef {
     }))
 }
 
-pub fn new_entity(geometry: Rc<Mesh>, shader: Rc<Shader>) -> NodeRef {
+pub fn new_entity(geometry: Rc<Mesh>, shader: Rc<dyn Shader>) -> NodeRef {
     Rc::new(RefCell::new(NodeData {
         variant: Variant::Entity(geometry, shader),
         ..Default::default()

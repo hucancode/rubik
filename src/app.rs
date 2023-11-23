@@ -1,5 +1,5 @@
 use crate::geometry::Mesh;
-use crate::material::Shader;
+use crate::material::ShaderUnlit;
 use crate::rubik::Rubik;
 use crate::world::{new_entity, new_light, Node, NodeRef, Renderer};
 use glam::Vec4;
@@ -29,11 +29,8 @@ impl App {
     pub fn init(&mut self) {
         let app_init_timestamp = Instant::now();
         let cube_mesh = Rc::new(Mesh::new_cube(0xcba6f7ff, &self.renderer.device));
-        let shader = Rc::new(Shader::new(
-            &self.renderer.device,
-            include_str!("material/shader.wgsl"),
-        ));
-        self.rubik.generate_pieces(1, &self.renderer.device);
+        let shader_unlit = Rc::new(ShaderUnlit::new(&self.renderer));
+        self.rubik.generate_pieces(1, &self.renderer);
         self.rubik.start_move_random();
         self.renderer.root.add_child(self.rubik.root.clone());
         let lights = vec![
@@ -74,7 +71,7 @@ impl App {
         self.lights = lights
             .into_iter()
             .map(|(color, radius, intensity, time_offset)| {
-                let mut cube = new_entity(cube_mesh.clone(), shader.clone());
+                let mut cube = new_entity(cube_mesh.clone(), shader_unlit.clone());
                 cube.scale_uniform(0.7);
                 cube.translate(1.0, 1.0, 1.0);
                 let mut light = new_light(color, radius * intensity);

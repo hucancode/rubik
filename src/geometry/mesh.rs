@@ -4,13 +4,13 @@ use wgpu::{Buffer, BufferUsages, Device};
 
 pub struct Mesh {
     pub vertices: Vec<Vertex>,
-    pub indices: Vec<u16>,
+    pub indices: Vec<u32>,
     pub vertex_buffer: Buffer,
     pub index_buffer: Buffer,
 }
 
 impl Mesh {
-    pub fn new(vertices: Vec<Vertex>, indices: Vec<u16>, device: &Device) -> Self {
+    pub fn new(vertices: Vec<Vertex>, indices: Vec<u32>, device: &Device) -> Self {
         let vertex_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertices),

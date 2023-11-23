@@ -1,7 +1,7 @@
 use crate::geometry::Mesh;
-use crate::material::Shader;
+use crate::material::ShaderLit;
 use crate::rubik::Move;
-use crate::world::{new_entity, new_group, Node, NodeRef};
+use crate::world::{new_entity, new_group, Node, NodeRef, Renderer};
 use rand::Rng;
 use std::f32::consts::PI;
 use std::rc::Rc;
@@ -11,7 +11,6 @@ use tween::{
     Linear, QuadIn, QuadInOut, QuadOut, QuintIn, QuintInOut, QuintOut, SineIn, SineInOut, SineOut,
     Tween, Tweener,
 };
-use wgpu::Device;
 
 const CUBE_SIZE: f32 = 2.0;
 const CUBE_MARGIN: f32 = 0.15;
@@ -43,8 +42,8 @@ impl Rubik {
             span: 0,
         }
     }
-    pub fn generate_pieces(&mut self, span: usize, device: &Device) {
-        let shader = Rc::new(Shader::new(device, include_str!("../material/shader.wgsl")));
+    pub fn generate_pieces(&mut self, span: usize, renderer: &Renderer) {
+        let shader = Rc::new(ShaderLit::new(renderer));
         let d = CUBE_SIZE + CUBE_MARGIN;
         self.span = span;
         let n = span as i32;
@@ -68,7 +67,7 @@ impl Rubik {
                         continue;
                     }
                     let rubik_mesh = Rc::new(Mesh::new_rubik_piece(
-                        device,
+                        &renderer.device,
                         faced_top,
                         faced_bottom,
                         faced_left,
