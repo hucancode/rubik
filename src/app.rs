@@ -6,6 +6,7 @@ use glam::Vec4;
 use std::f32::consts::PI;
 use std::rc::Rc;
 use std::time::Instant;
+use wgpu::Color;
 use winit::window::Window;
 
 const LIGHT_RADIUS: f32 = 10.0;
@@ -35,7 +36,7 @@ impl App {
         self.renderer.root.add_child(self.rubik.root.clone());
         let lights = vec![
             (
-                wgpu::Color {
+                Color {
                     r: 0.0,
                     g: 0.5,
                     b: 1.0,
@@ -46,7 +47,7 @@ impl App {
                 0,
             ),
             (
-                wgpu::Color {
+                Color {
                     r: 0.0,
                     g: 0.5,
                     b: 1.0,
@@ -57,7 +58,7 @@ impl App {
                 2200,
             ),
             (
-                wgpu::Color {
+                Color {
                     r: 0.0,
                     g: 1.0,
                     b: 0.5,

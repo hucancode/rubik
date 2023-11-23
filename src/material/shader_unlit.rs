@@ -10,7 +10,8 @@ use wgpu::{
     BufferBindingType, BufferDescriptor, BufferSize, BufferUsages, CompareFunction, DepthBiasState,
     DepthStencilState, DynamicOffset, Face, FragmentState, FrontFace, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModule, ShaderStages, StencilState, TextureFormat, VertexState,
+    RenderPipelineDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages,
+    StencilState, TextureFormat, VertexState,
 };
 
 use crate::geometry::Vertex;
@@ -60,9 +61,9 @@ impl ShaderUnlit {
             bind_group_layouts: &[&bind_group_layout_node, &bind_group_layout_camera],
             push_constant_ranges: &[],
         });
-        let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+        let module = device.create_shader_module(ShaderModuleDescriptor {
             label: None,
-            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_unlit.wgsl"))),
+            source: ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_unlit.wgsl"))),
         });
         let render_pipeline = device.create_render_pipeline(&RenderPipelineDescriptor {
             label: None,
