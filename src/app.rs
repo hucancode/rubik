@@ -5,6 +5,7 @@ use crate::world::{new_entity, new_light, Node, NodeRef, Renderer};
 use glam::Vec4;
 use std::f32::consts::PI;
 use std::rc::Rc;
+use std::sync::Arc;
 use std::time::Instant;
 use wgpu::Color;
 use winit::window::Window;
@@ -19,7 +20,7 @@ pub struct App {
 }
 
 impl App {
-    pub async fn new(window: &Window) -> Self {
+    pub async fn new(window: Arc<Window>) -> Self {
         let renderer = Renderer::new(window).await;
         Self {
             renderer,
