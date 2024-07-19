@@ -45,22 +45,13 @@ impl Renderer {
         let device_request_timestamp = Instant::now();
         let adapter = instance
             .request_adapter(&RequestAdapterOptions {
-                power_preference: PowerPreference::default(),
-                force_fallback_adapter: false,
                 compatible_surface: Some(&surface),
+                ..Default::default()
             })
             .await
             .expect("Failed to find an appropriate adapter");
         let (device, queue) = adapter
-            .request_device(
-                &DeviceDescriptor {
-                    label: None,
-                    required_features: Features::empty(),
-                    required_limits: Limits::downlevel_webgl2_defaults()
-                        .using_resolution(adapter.limits()),
-                },
-                None,
-            )
+            .request_device(&DeviceDescriptor::default(), None)
             .await
             .expect("Failed to create device");
         println!(

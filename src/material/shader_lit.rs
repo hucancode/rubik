@@ -109,11 +109,13 @@ impl ShaderLit {
                 module: &module,
                 entry_point: "vs_main",
                 buffers: &[Vertex::desc()],
+                compilation_options: Default::default(),
             },
             fragment: Some(FragmentState {
                 module: &module,
                 entry_point: "fs_main",
                 targets: &[Some(renderer.config.format.into())],
+                compilation_options: Default::default(),
             }),
             primitive: PrimitiveState {
                 front_face: FrontFace::Ccw,
@@ -129,6 +131,7 @@ impl ShaderLit {
             }),
             multisample: MultisampleState::default(),
             multiview: None,
+            cache: None,
         });
         let vp_buffer = device.create_buffer_init(&BufferInitDescriptor {
             label: Some("Camera View Projection Buffer"),
