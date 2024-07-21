@@ -115,9 +115,8 @@ impl App {
         }
         self.rubik.update(delta_time);
         self.rubik.root.rotate_z((0.0003 * time as f64) as f32);
-        if let Some(renderer) = self.renderer.as_mut() {
-            renderer.time = time as f32;
-        }
+        let Some(renderer) = self.renderer.as_mut() else { return };
+        renderer.time = time as f32;
     }
 }
 
@@ -134,9 +133,8 @@ impl ApplicationHandler for App {
             let time = self.start_time_stamp.elapsed().as_millis();
             let delta_time = self.last_frame_timestamp.elapsed().as_secs_f32();
             self.update(delta_time, time);
-            if let Some(window) = self.window.as_ref() {
-                window.request_redraw();
-            }
+            let Some(window) = self.window.as_ref() else { return };
+            window.request_redraw();
             self.last_frame_timestamp = Instant::now();
         }
     }
