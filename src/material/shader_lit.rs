@@ -241,7 +241,7 @@ impl Shader for ShaderLit {
     fn write_camera_data(&self, queue: &Queue, matrix: &[f32; 16]) {
         queue.write_buffer(&self.vp_buffer, 0, bytemuck::bytes_of(matrix));
     }
-    fn write_light_data(&self, queue: &Queue, lights: &Vec<Light>) {
+    fn write_light_data(&self, queue: &Queue, lights: &[Light]) {
         queue.write_buffer(
             &self.light_count_buffer,
             0,
