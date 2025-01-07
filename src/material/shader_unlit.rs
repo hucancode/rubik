@@ -2,7 +2,10 @@ use crate::material::Shader;
 use glam::Mat4;
 use std::borrow::Cow;
 use std::mem::size_of;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
 use wgpu::util::{align_to, BufferInitDescriptor, DeviceExt};
 use wgpu::{
     BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor,
@@ -70,13 +73,13 @@ impl ShaderUnlit {
             layout: Some(&pipeline_layout),
             vertex: VertexState {
                 module: &module,
-                entry_point: "vs_main",
+                entry_point: None,
                 buffers: &[Vertex::desc()],
                 compilation_options: Default::default(),
             },
             fragment: Some(FragmentState {
                 module: &module,
-                entry_point: "fs_main",
+                entry_point: None,
                 targets: &[Some(renderer.config.format.into())],
                 compilation_options: Default::default(),
             }),

@@ -6,15 +6,21 @@ use glam::Vec4;
 use std::f32::consts::PI;
 use std::rc::Rc;
 use std::sync::Arc;
+#[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+use web_time::Instant;
 use wgpu::Color;
 use winit::application::ApplicationHandler;
-use winit::event::{StartCause, WindowEvent};
-use winit::event_loop::ActiveEventLoop;
+use winit::event::{ElementState, StartCause, WindowEvent};
+use winit::event_loop::{ActiveEventLoop, ControlFlow, EventLoop, EventLoopProxy};
+use winit::keyboard::{KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 
 const LIGHT_RADIUS: f32 = 10.0;
 const LIGHT_INTENSITY: f32 = 2.5;
+const WINDOW_WIDTH: u32 = 1024;
+const WINDOW_HEIGHT: u32 = 768;
 
 pub struct App {
     window: Option<Arc<Window>>,
@@ -22,28 +28,32 @@ pub struct App {
     last_frame_timestamp: Instant,
     renderer: Option<Renderer>,
     lights: Vec<(NodeRef, NodeRef, u128)>,
+    event_loop: Option<EventLoopProxy<Renderer>>,
     rubik: Rubik,
 }
 
-impl Default for App {
-    fn default() -> Self {
+impl App {
+    pub fn new(event_loop: &EventLoop<Renderer>) -> Self {
         Self {
             window: None,
             start_time_stamp: Instant::now(),
             last_frame_timestamp: Instant::now(),
             renderer: None,
             lights: Vec::new(),
+            event_loop: Some(event_loop.create_proxy()),
             rubik: Rubik::new(),
         }
     }
 }
 
 impl App {
-    pub async fn init(&mut self) {
-        if self.window.is_none() {
+    pub async fn make_renderer(window: Arc<Window>) -> Renderer {
+        Renderer::new(window.clone(), WINDOW_WIDTH, WINDOW_HEIGHT).await
+    }
+    pub fn init(&mut self) {
+        let Some(renderer) = self.renderer.as_mut() else {
             return;
-        }
-        let mut renderer = Renderer::new(self.window.as_ref().unwrap().clone()).await;
+        };
         let app_init_timestamp = Instant::now();
         let cube_mesh = Rc::new(Mesh::new_cube(0xcba6f7ff, &renderer.device));
         let shader_unlit = Rc::new(ShaderUnlit::new(&renderer));
@@ -98,7 +108,6 @@ impl App {
             })
             .collect();
         println!("app initialized in {:?}", app_init_timestamp.elapsed());
-        self.renderer = Some(renderer);
     }
     pub fn update(&mut self, delta_time: f32, time: u128) {
         for (light, cube, time_offset) in self.lights.iter_mut() {
@@ -115,28 +124,86 @@ impl App {
         }
         self.rubik.update(delta_time);
         self.rubik.root.rotate_z((0.0003 * time as f64) as f32);
-        let Some(renderer) = self.renderer.as_mut() else { return };
+        let Some(renderer) = self.renderer.as_mut() else {
+            return;
+        };
         renderer.time = time as f32;
     }
 }
 
-impl ApplicationHandler for App {
+impl ApplicationHandler<Renderer> for App {
     fn resumed(&mut self, event_loop: &ActiveEventLoop) {
-        let window = event_loop
-            .create_window(Window::default_attributes().with_title("Rubik"))
-            .unwrap();
-        self.window = Some(Arc::new(window));
-        pollster::block_on(self.init());
+        use winit::dpi::PhysicalSize;
+        log::info!("creating window...");
+        let mut attr = Window::default_attributes()
+            .with_inner_size(PhysicalSize::new(WINDOW_WIDTH, WINDOW_HEIGHT));
+        #[cfg(target_arch = "wasm32")]
+        {
+            use wasm_bindgen::JsCast;
+            use web_sys::HtmlCanvasElement;
+            use wgpu::web_sys;
+            use winit::platform::web::WindowAttributesExtWebSys;
+            // use first canvas element, or create one if none found
+            let canvas = web_sys::window()
+                .and_then(|w| w.document())
+                .and_then(|d| d.query_selector("canvas").ok())
+                .and_then(|c| c)
+                .and_then(|c| c.dyn_into::<HtmlCanvasElement>().ok());
+            if let Some(canvas) = canvas {
+                attr = attr.with_canvas(Some(canvas));
+            } else {
+                attr = attr.with_append(true);
+            }
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            attr = attr.with_title("Dragon");
+        }
+        let window = Arc::new(event_loop.create_window(attr).unwrap());
+        let Some(event_loop) = self.event_loop.take() else {
+            return;
+        };
+        self.window = Some(window.clone());
+        log::info!(
+            "window created! inner size {:?} outer size {:?}",
+            window.inner_size(),
+            window.outer_size(),
+        );
+        log::info!("creating renderer...");
+        #[cfg(target_arch = "wasm32")]
+        {
+            wasm_bindgen_futures::spawn_local(async move {
+                let renderer = App::make_renderer(window).await;
+                log::info!("renderer created!");
+                if let Err(_renderer) = event_loop.send_event(renderer) {
+                    log::error!("Failed to send renderer back to application thread");
+                }
+            });
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            let renderer = pollster::block_on(App::make_renderer(window));
+            if let Err(_renderer) = event_loop.send_event(renderer) {
+                log::error!("Failed to send renderer back to application thread");
+            }
+        }
     }
     fn new_events(&mut self, _event_loop: &ActiveEventLoop, cause: StartCause) {
         if cause == StartCause::Poll {
             let time = self.start_time_stamp.elapsed().as_millis();
             let delta_time = self.last_frame_timestamp.elapsed().as_secs_f32();
             self.update(delta_time, time);
-            let Some(window) = self.window.as_ref() else { return };
+            let Some(window) = self.window.as_ref() else {
+                return;
+            };
             window.request_redraw();
             self.last_frame_timestamp = Instant::now();
         }
+    }
+    fn user_event(&mut self, _event_loop: &ActiveEventLoop, renderer: Renderer) {
+        log::info!("got renderer!");
+        self.renderer = Some(renderer);
+        self.init();
     }
     fn window_event(
         &mut self,
@@ -150,6 +217,32 @@ impl ApplicationHandler for App {
             match event {
                 WindowEvent::RedrawRequested => renderer.draw(),
                 WindowEvent::Resized(size) => renderer.resize(size.width, size.height),
+                WindowEvent::KeyboardInput {
+                    device_id: _dev,
+                    event,
+                    is_synthetic: _synthetic,
+                } => {
+                    log::info!("keyboard pressed {:?}", event);
+                    match (event.physical_key, event.state) {
+                        // space to restart animation
+                        (PhysicalKey::Code(KeyCode::Space), ElementState::Released) => {
+                            self.start_time_stamp = Instant::now();
+                        }
+                        // escape to exit
+                        (PhysicalKey::Code(KeyCode::Escape), ElementState::Released) => {
+                            event_loop.exit();
+                        }
+                        // P to pause/play animation
+                        (PhysicalKey::Code(KeyCode::KeyP), ElementState::Released) => {
+                            match event_loop.control_flow() {
+                                ControlFlow::Poll => event_loop.set_control_flow(ControlFlow::Wait),
+                                ControlFlow::Wait => event_loop.set_control_flow(ControlFlow::Poll),
+                                _ => {}
+                            }
+                        }
+                        _ => {}
+                    }
+                }
                 _ => {}
             }
         }
