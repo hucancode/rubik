@@ -9,11 +9,11 @@ use std::time::Instant;
 use web_time::Instant;
 use wgpu::util::align_to;
 use wgpu::{
-    BufferAddress, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, Features,
-    IndexFormat, Instance, Limits, LoadOp, Operations, PowerPreference, Queue,
-    RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor,
-    RequestAdapterOptions, StoreOp, Surface, SurfaceConfiguration, SurfaceError, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
+    BufferAddress, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d,
+    IndexFormat, Instance, LoadOp, Operations, Queue, RenderPassColorAttachment,
+    RenderPassDepthStencilAttachment, RenderPassDescriptor, RequestAdapterOptions, StoreOp,
+    Surface, SurfaceConfiguration, SurfaceError, TextureDescriptor, TextureDimension,
+    TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
 };
 use winit::window::Window;
 

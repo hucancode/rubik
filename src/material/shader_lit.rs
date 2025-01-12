@@ -13,15 +13,14 @@ use wgpu::{
     BufferBindingType, BufferDescriptor, BufferSize, BufferUsages, CompareFunction, DepthBiasState,
     DepthStencilState, DynamicOffset, Face, FragmentState, FrontFace, MultisampleState,
     PipelineLayoutDescriptor, PrimitiveState, Queue, RenderPass, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModule, ShaderModuleDescriptor, ShaderSource, ShaderStages,
-    StencilState, TextureFormat, VertexState,
+    RenderPipelineDescriptor, ShaderModuleDescriptor, ShaderSource, ShaderStages, StencilState,
+    TextureFormat, VertexState,
 };
 
 use crate::geometry::Vertex;
 use crate::world::{Light, Renderer, MAX_ENTITY, MAX_LIGHT};
 
 pub struct ShaderLit {
-    pub module: ShaderModule,
     pub render_pipeline: RenderPipeline,
     pub bind_group_camera: BindGroup,
     pub bind_group_node: BindGroup,
@@ -213,7 +212,6 @@ impl ShaderLit {
         });
         println!("created shader in {:?}", new_shader_timestamp.elapsed());
         Self {
-            module,
             render_pipeline,
             bind_group_camera,
             bind_group_node,
