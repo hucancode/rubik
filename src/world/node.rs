@@ -55,13 +55,13 @@ pub fn new_entity(geometry: Rc<Mesh>, shader: Rc<dyn Shader>) -> NodeRef {
 pub trait Node {
     fn get_translation(&self) -> Vec3;
     fn translate(&mut self, x: f32, y: f32, z: f32);
-    fn translate_x(&mut self, x: f32);
-    fn translate_y(&mut self, y: f32);
-    fn translate_z(&mut self, z: f32);
+    // fn translate_x(&mut self, x: f32);
+    // fn translate_y(&mut self, y: f32);
+    // fn translate_z(&mut self, z: f32);
     fn scale(&mut self, x: f32, y: f32, z: f32);
-    fn scale_x(&mut self, x: f32);
-    fn scale_y(&mut self, y: f32);
-    fn scale_z(&mut self, z: f32);
+    // fn scale_x(&mut self, x: f32);
+    // fn scale_y(&mut self, y: f32);
+    // fn scale_z(&mut self, z: f32);
     fn scale_uniform(&mut self, v: f32) {
         self.scale(v, v, v)
     }
@@ -86,27 +86,27 @@ impl Node for NodeData {
     fn translate(&mut self, x: f32, y: f32, z: f32) {
         self.translation = Vec3::new(x, y, z);
     }
-    fn translate_x(&mut self, x: f32) {
-        self.translate(x, 0.0, 0.0)
-    }
-    fn translate_y(&mut self, y: f32) {
-        self.translate(0.0, y, 0.0)
-    }
-    fn translate_z(&mut self, z: f32) {
-        self.translate(0.0, 0.0, z)
-    }
+    // fn translate_x(&mut self, x: f32) {
+    //     self.translate(x, 0.0, 0.0)
+    // }
+    // fn translate_y(&mut self, y: f32) {
+    //     self.translate(0.0, y, 0.0)
+    // }
+    // fn translate_z(&mut self, z: f32) {
+    //     self.translate(0.0, 0.0, z)
+    // }
     fn scale(&mut self, x: f32, y: f32, z: f32) {
         self.scale = Vec3::new(x, y, z);
     }
-    fn scale_x(&mut self, x: f32) {
-        self.scale(x, 0.0, 0.0)
-    }
-    fn scale_y(&mut self, y: f32) {
-        self.scale(0.0, y, 0.0)
-    }
-    fn scale_z(&mut self, z: f32) {
-        self.scale(0.0, 0.0, z)
-    }
+    // fn scale_x(&mut self, x: f32) {
+    //     self.scale(x, 0.0, 0.0)
+    // }
+    // fn scale_y(&mut self, y: f32) {
+    //     self.scale(0.0, y, 0.0)
+    // }
+    // fn scale_z(&mut self, z: f32) {
+    //     self.scale(0.0, 0.0, z)
+    // }
     fn rotate_quat(&mut self, q: Quat) {
         self.rotation = q;
     }
@@ -156,27 +156,27 @@ impl Node for NodeRef {
     fn translate(&mut self, x: f32, y: f32, z: f32) {
         self.borrow_mut().translate(x, y, z)
     }
-    fn translate_x(&mut self, x: f32) {
-        self.translate(x, 0.0, 0.0)
-    }
-    fn translate_y(&mut self, y: f32) {
-        self.translate(0.0, y, 0.0)
-    }
-    fn translate_z(&mut self, z: f32) {
-        self.translate(0.0, 0.0, z)
-    }
+    // fn translate_x(&mut self, x: f32) {
+    //     self.translate(x, 0.0, 0.0)
+    // }
+    // fn translate_y(&mut self, y: f32) {
+    //     self.translate(0.0, y, 0.0)
+    // }
+    // fn translate_z(&mut self, z: f32) {
+    //     self.translate(0.0, 0.0, z)
+    // }
     fn scale(&mut self, x: f32, y: f32, z: f32) {
         self.borrow_mut().scale(x, y, z)
     }
-    fn scale_x(&mut self, x: f32) {
-        self.scale(x, 0.0, 0.0)
-    }
-    fn scale_y(&mut self, y: f32) {
-        self.scale(0.0, y, 0.0)
-    }
-    fn scale_z(&mut self, z: f32) {
-        self.scale(0.0, 0.0, z)
-    }
+    // fn scale_x(&mut self, x: f32) {
+    //     self.scale(x, 0.0, 0.0)
+    // }
+    // fn scale_y(&mut self, y: f32) {
+    //     self.scale(0.0, y, 0.0)
+    // }
+    // fn scale_z(&mut self, z: f32) {
+    //     self.scale(0.0, 0.0, z)
+    // }
     fn rotate_quat(&mut self, q: Quat) {
         self.borrow_mut().rotate_quat(q);
     }
