@@ -9,11 +9,7 @@ use std::time::Instant;
 use web_time::Instant;
 use wgpu::util::align_to;
 use wgpu::{
-    BufferAddress, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d,
-    IndexFormat, Instance, LoadOp, Operations, Queue, RenderPassColorAttachment,
-    RenderPassDepthStencilAttachment, RenderPassDescriptor, RequestAdapterOptions, StoreOp,
-    Surface, SurfaceConfiguration, SurfaceError, TextureDescriptor, TextureDimension,
-    TextureFormat, TextureUsages, TextureView, TextureViewDescriptor,
+    BackendOptions, Backends, BufferAddress, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, IndexFormat, Instance, InstanceDescriptor, InstanceFlags, LoadOp, Operations, Queue, RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor, RequestAdapterOptions, StoreOp, Surface, SurfaceConfiguration, SurfaceError, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor
 };
 use winit::window::Window;
 
@@ -39,9 +35,23 @@ pub struct Renderer {
 }
 
 impl Renderer {
+    fn adapt_texture_format(format: TextureFormat) -> TextureFormat {
+        #[cfg(target_arch = "wasm32")]
+        {
+            format.add_srgb_suffix()
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            format.remove_srgb_suffix()
+        }
+    }
     pub async fn new(window: Arc<Window>, width: u32, height: u32) -> Renderer {
         let new_renderer_timestamp = Instant::now();
-        let instance = Instance::default();
+        let instance = Instance::new(&InstanceDescriptor {
+            backends: Backends::PRIMARY,
+            flags: InstanceFlags::from_env_or_default(),
+            backend_options: BackendOptions::from_env_or_default(),
+        });
         let surface = instance.create_surface(window).unwrap();
         log::info!(
             "created surface size {width}x{height} in {:?}",
@@ -66,7 +76,10 @@ impl Renderer {
         let mut config = surface
             .get_default_config(&adapter, max(1, width), max(1, height))
             .expect("Surface must be supported by adapter");
-        config.view_formats.push(config.format.add_srgb_suffix());
+
+        let format = surface.get_capabilities(&adapter).formats[0];
+        config.format = Self::adapt_texture_format(format);
+        config.view_formats.push(format);
         surface.configure(&device, &config);
         let depth_texture = device.create_texture(&TextureDescriptor {
             size: Extent3d {
