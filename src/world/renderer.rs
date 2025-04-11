@@ -36,11 +36,11 @@ pub struct Renderer {
 
 impl Renderer {
     fn adapt_texture_format(format: TextureFormat) -> TextureFormat {
-        #[cfg(target_arch = "wasm32")]
+        #[cfg(not(target_arch = "wasm32"))]
         {
             format.add_srgb_suffix()
         }
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(target_arch = "wasm32")]
         {
             format.remove_srgb_suffix()
         }
@@ -82,7 +82,8 @@ impl Renderer {
             .expect("Surface must be supported by adapter");
 
         let format = surface.get_capabilities(&adapter).formats[0];
-        config.format = Self::adapt_texture_format(format);
+        let format = Self::adapt_texture_format(format);
+        config.format = format;
         config.view_formats.push(format);
         surface.configure(&device, &config);
         let depth_texture = device.create_texture(&TextureDescriptor {
