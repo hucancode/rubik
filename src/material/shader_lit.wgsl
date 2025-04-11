@@ -36,12 +36,12 @@ fn vs_main(input: VertexInput) -> VertexOutput {
 @group(1) @binding(1)
 var<uniform> lights: array<Light, MAX_LIGHT>;
 @group(1) @binding(2)
-var<uniform> light_count: u32;
+var<uniform> light_count: vec4<u32>;
 
 @fragment
 fn fs_main(vertex: VertexOutput) -> @location(0) vec4<f32> {
     var color = vec3(0.0);
-    for (var i = 0u; i < light_count; i++) {
+    for (var i = 0u; i < light_count.x; i++) {
         let world_to_light = lights[i].position - vertex.world_position.xyz;
         let dist = clamp(length(world_to_light), 0.0, lights[i].radius);
         let radiance = lights[i].color.rgb * (1.0 - dist / lights[i].radius);

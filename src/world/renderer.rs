@@ -9,7 +9,7 @@ use std::time::Instant;
 use web_time::Instant;
 use wgpu::util::align_to;
 use wgpu::{
-    BackendOptions, Backends, BufferAddress, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, IndexFormat, Instance, InstanceDescriptor, InstanceFlags, LoadOp, Operations, Queue, RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor, RequestAdapterOptions, StoreOp, Surface, SurfaceConfiguration, SurfaceError, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor
+    BackendOptions, Backends, BufferAddress, Color, CommandEncoderDescriptor, Device, DeviceDescriptor, Extent3d, IndexFormat, Instance, InstanceDescriptor, InstanceFlags, Limits, LoadOp, Operations, Queue, RenderPassColorAttachment, RenderPassDepthStencilAttachment, RenderPassDescriptor, RequestAdapterOptions, StoreOp, Surface, SurfaceConfiguration, SurfaceError, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView, TextureViewDescriptor
 };
 use winit::window::Window;
 
@@ -48,7 +48,7 @@ impl Renderer {
     pub async fn new(window: Arc<Window>, width: u32, height: u32) -> Renderer {
         let new_renderer_timestamp = Instant::now();
         let instance = Instance::new(&InstanceDescriptor {
-            backends: Backends::PRIMARY,
+            backends: Backends::all(),
             flags: InstanceFlags::from_env_or_default(),
             backend_options: BackendOptions::from_env_or_default(),
         });
@@ -66,8 +66,12 @@ impl Renderer {
             .await
             .expect("Failed to find an appropriate adapter");
         let (device, queue) = adapter
-            .request_device(&DeviceDescriptor::default(), None)
+            .request_device(&DeviceDescriptor::default())
             .await
+            .or(adapter.request_device(&DeviceDescriptor {
+                required_limits: Limits::downlevel_webgl2_defaults(),
+                ..Default::default()
+                }).await)
             .expect("Failed to create device");
         log::info!(
             "requested device in {:?}",

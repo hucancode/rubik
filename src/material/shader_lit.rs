@@ -64,7 +64,7 @@ impl ShaderLit {
                         ty: BindingType::Buffer {
                             ty: BufferBindingType::Uniform,
                             has_dynamic_offset: false,
-                            min_binding_size: BufferSize::new(size_of::<usize>() as u64),
+                            min_binding_size: BufferSize::new(size_of::<[u32; 4]>() as u64),
                         },
                         count: None,
                     },
@@ -149,7 +149,7 @@ impl ShaderLit {
         });
         let light_count_buffer = device.create_buffer(&BufferDescriptor {
             label: Some("Light Count"),
-            size: size_of::<usize>() as u64,
+            size: size_of::<[u32; 4]>() as u64,
             usage: BufferUsages::UNIFORM | BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
@@ -243,10 +243,11 @@ impl Shader for ShaderLit {
         queue.write_buffer(&self.vp_buffer, 0, bytemuck::bytes_of(matrix));
     }
     fn write_light_data(&self, queue: &Queue, lights: &[Light]) {
+        let buffer = [lights.len() as u32, 0, 0, 0];
         queue.write_buffer(
             &self.light_count_buffer,
             0,
-            bytemuck::bytes_of(&lights.len()),
+            bytemuck::bytes_of(&buffer),
         );
         queue.write_buffer(&self.light_buffer, 0, bytemuck::cast_slice(lights));
     }

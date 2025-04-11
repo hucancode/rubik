@@ -5,13 +5,6 @@
             import init from "./rubik.js";
             async function run() {
                 try {
-                    if (!navigator.gpu) {
-                        document.getElementById("canvas").remove();
-                        document.body.appendChild(
-                            document.createElement("h1"),
-                        ).textContent = "WebGPU not supported.";
-                        throw Error("WebGPU not supported.");
-                    }
                     await init();
                 } catch (e) {
                     console.error(
