@@ -1,4 +1,5 @@
 use crate::world::{node, Camera, Light, Node, NodeRef};
+use egui_wgpu::ScreenDescriptor;
 use glam::{Mat4, Vec4};
 use std::cmp::max;
 use std::mem::size_of;
@@ -21,7 +22,6 @@ const CLEAR_COLOR: Color = Color {
     b: 0.02388235294,
     a: 1.0,
 };
-const CAMERA_DISTANCE: f32 = 10.0;
 
 pub struct Renderer {
     pub camera: Camera,
@@ -32,6 +32,7 @@ pub struct Renderer {
     pub device: Device,
     pub queue: Queue,
     depth_texture_view: TextureView,
+    pub egui_renderer: egui_wgpu::Renderer,
 }
 
 impl Renderer {
@@ -105,6 +106,7 @@ impl Renderer {
             "in total, created new renderer in {:?}",
             new_renderer_timestamp.elapsed()
         );
+        let egui_renderer = egui_wgpu::Renderer::new(&device, config.format, None, 1, false);
         Self {
             camera: Camera::new(),
             root: node::new_group(),
@@ -114,6 +116,7 @@ impl Renderer {
             queue,
             time: 0.0,
             depth_texture_view,
+            egui_renderer,
         }
     }
 
@@ -138,7 +141,7 @@ impl Renderer {
         self.depth_texture_view = depth_texture.create_view(&TextureViewDescriptor::default());
     }
 
-    pub fn draw(&self) {
+    pub fn draw(&mut self, egui_ctx: &egui::Context, egui_primitives: Vec<egui::ClippedPrimitive>, textures_delta: egui::TexturesDelta) {
         let frame = match self.surface.get_current_texture() {
             Ok(frame) => frame,
             Err(SurfaceError::Timeout) => {
@@ -154,14 +157,71 @@ impl Renderer {
             }
         };
         let view = frame.texture.create_view(&TextureViewDescriptor::default());
+        
+        // Prepare render data
+        let mut nodes = Vec::new();
+        let mut lights: Vec<(Color, f32, Mat4)> = Vec::new();
+        
+        // Collect nodes and lights
+        let mut q = Vec::new();
+        q.push((self.root.clone(), Mat4::IDENTITY));
+        let vp_matrix = self.camera.make_vp_matrix(
+            self.config.width as f32 / self.config.height as f32,
+        );
+        while let Some((node, transform_mx)) = q.pop() {
+            match &node.borrow().variant {
+                node::Variant::Entity(geometry, shader) => {
+                    let (_scale, rotation, _translation) =
+                        transform_mx.to_scale_rotation_translation();
+                    let rotation = Mat4::from_quat(rotation);
+                    nodes.push((geometry.clone(), shader.clone(), transform_mx, rotation));
+                }
+                node::Variant::Light(color, radius) => {
+                    lights.push((*color, *radius, transform_mx));
+                }
+                _ => {}
+            }
+            for child in node.borrow().children.iter() {
+                let transform_mx = transform_mx * child.calculate_transform();
+                q.push((child.clone(), transform_mx));
+            }
+        }
+        let lights = lights
+            .into_iter()
+            .map(|(color, radius, transform)| {
+                let position = transform * Vec4::W;
+                Light {
+                    position: [position.x, position.y, position.z],
+                    radius,
+                    color: [
+                        color.r as f32,
+                        color.g as f32,
+                        color.b as f32,
+                        color.a as f32,
+                    ],
+                }
+            })
+            .collect::<Vec<Light>>();
+        let node_uniform_aligned = {
+            let node_uniform_size = size_of::<Mat4>() as BufferAddress;
+            let alignment =
+                self.device.limits().min_uniform_buffer_offset_alignment as BufferAddress;
+            align_to(node_uniform_size, alignment)
+        };
+        
+        // Update egui textures
+        for (id, image_delta) in &textures_delta.set {
+            self.egui_renderer
+                .update_texture(&self.device, &self.queue, *id, &image_delta);
+        }
+        
+        // Create command encoder and render
         let mut encoder = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor::default());
-        let mut nodes = Vec::new();
-        let mut lights: Vec<(Color, f32, Mat4)> = Vec::new();
+        
+        // Main render pass
         {
-            nodes.clear();
-            lights.clear();
             let mut rpass = encoder.begin_render_pass(&RenderPassDescriptor {
                 label: None,
                 color_attachments: &[Some(RenderPassColorAttachment {
@@ -183,52 +243,7 @@ impl Renderer {
                 timestamp_writes: None,
                 occlusion_query_set: None,
             });
-            let mut q = Vec::new();
-            q.push((self.root.clone(), Mat4::IDENTITY));
-            let vp_matrix = Camera::make_vp_matrix(
-                self.config.width as f32 / self.config.height as f32,
-                CAMERA_DISTANCE,
-            );
-            while let Some((node, transform_mx)) = q.pop() {
-                match &node.borrow().variant {
-                    node::Variant::Entity(geometry, shader) => {
-                        let (_scale, rotation, _translation) =
-                            transform_mx.to_scale_rotation_translation();
-                        let rotation = Mat4::from_quat(rotation);
-                        nodes.push((geometry.clone(), shader.clone(), transform_mx, rotation));
-                    }
-                    node::Variant::Light(color, radius) => {
-                        lights.push((*color, *radius, transform_mx));
-                    }
-                    _ => {}
-                }
-                for child in node.borrow().children.iter() {
-                    let transform_mx = transform_mx * child.calculate_transform();
-                    q.push((child.clone(), transform_mx));
-                }
-            }
-            let lights = lights
-                .into_iter()
-                .map(|(color, radius, transform)| {
-                    let position = transform * Vec4::W;
-                    Light {
-                        position: [position.x, position.y, position.z],
-                        radius,
-                        color: [
-                            color.r as f32,
-                            color.g as f32,
-                            color.b as f32,
-                            color.a as f32,
-                        ],
-                    }
-                })
-                .collect::<Vec<Light>>();
-            let node_uniform_aligned = {
-                let node_uniform_size = size_of::<Mat4>() as BufferAddress;
-                let alignment =
-                    self.device.limits().min_uniform_buffer_offset_alignment as BufferAddress;
-                align_to(node_uniform_size, alignment)
-            };
+            
             for (i, (geometry, shader, transform, rotation)) in nodes.iter().enumerate() {
                 let offset = (node_uniform_aligned * i as u64) as BufferAddress;
                 shader.set_pipeline(&mut rpass, offset);
@@ -243,6 +258,50 @@ impl Renderer {
                 rpass.draw_indexed(0..n, 0, 0..1);
             }
         }
+        
+        // Render egui
+        let pixels_per_point = egui_ctx.pixels_per_point().max(1.0);
+        let screen_descriptor = ScreenDescriptor {
+            size_in_pixels: [self.config.width, self.config.height],
+            pixels_per_point,
+        };
+        
+        self.egui_renderer.update_buffers(
+            &self.device,
+            &self.queue,
+            &mut encoder,
+            &egui_primitives,
+            &screen_descriptor,
+        );
+        
+        {
+            let rpass = encoder.begin_render_pass(&RenderPassDescriptor {
+                label: Some("egui_render_pass"),
+                color_attachments: &[Some(RenderPassColorAttachment {
+                    view: &view,
+                    resolve_target: None,
+                    ops: Operations {
+                        load: LoadOp::Load,
+                        store: StoreOp::Store,
+                    },
+                })],
+                depth_stencil_attachment: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
+            });
+            
+            let mut rpass = rpass.forget_lifetime();
+            self.egui_renderer.render(
+                &mut rpass,
+                &egui_primitives,
+                &screen_descriptor,
+            );
+        }
+        
+        for id in &textures_delta.free {
+            self.egui_renderer.free_texture(id);
+        }
+        
         self.queue.submit(Some(encoder.finish()));
         frame.present();
     }

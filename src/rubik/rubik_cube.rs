@@ -24,6 +24,8 @@ pub struct Rubik {
     moving_pieces: NodeRef,
     static_pieces: NodeRef,
     span: usize,
+    pub paused: bool,
+    pub auto_move: bool,
 }
 
 impl Rubik {
@@ -40,6 +42,8 @@ impl Rubik {
             moving_pieces: moving_cubes,
             static_pieces: static_cubes,
             span: 0,
+            paused: false,
+            auto_move: true,
         }
     }
     pub fn generate_pieces(&mut self, span: usize, renderer: &Renderer) {
@@ -183,13 +187,80 @@ impl Rubik {
             self.static_pieces.add_child(piece);
         }
         self.moving_pieces.rotate(0.0, 0.0, 0.0);
-        self.start_move_random();
+        if self.auto_move {
+            self.start_move_random();
+        }
     }
+    pub fn perform_move(&mut self, move_type: Move) {
+        if self.tween.is_finished() {
+            self.current_move = move_type;
+            let size = CUBE_SIZE + CUBE_MARGIN;
+            let threshold = size * (self.span as f32 - 0.5);
+            
+            match self.current_move {
+                Move::Top => {
+                    // Top face - highest Z layer
+                    for piece in self.static_pieces.extract_child_if(|piece| {
+                        piece.get_translation().z > threshold
+                    }) {
+                        self.moving_pieces.add_child(piece.clone());
+                    }
+                }
+                Move::Bottom => {
+                    // Bottom face - lowest Z layer
+                    for piece in self.static_pieces.extract_child_if(|piece| {
+                        piece.get_translation().z < -threshold
+                    }) {
+                        self.moving_pieces.add_child(piece.clone());
+                    }
+                }
+                Move::Left => {
+                    // Left face - lowest X layer
+                    for piece in self.static_pieces.extract_child_if(|piece| {
+                        piece.get_translation().x < -threshold
+                    }) {
+                        self.moving_pieces.add_child(piece.clone());
+                    }
+                }
+                Move::Right => {
+                    // Right face - highest X layer
+                    for piece in self.static_pieces.extract_child_if(|piece| {
+                        piece.get_translation().x > threshold
+                    }) {
+                        self.moving_pieces.add_child(piece.clone());
+                    }
+                }
+                Move::Front => {
+                    // Front face - highest Y layer
+                    for piece in self.static_pieces.extract_child_if(|piece| {
+                        piece.get_translation().y > threshold
+                    }) {
+                        self.moving_pieces.add_child(piece.clone());
+                    }
+                }
+                Move::Back => {
+                    // Back face - lowest Y layer
+                    for piece in self.static_pieces.extract_child_if(|piece| {
+                        piece.get_translation().y < -threshold
+                    }) {
+                        self.moving_pieces.add_child(piece.clone());
+                    }
+                }
+                _ => {}
+            };
+            
+            self.tween = Tweener::new(0.0, PI * 0.5, 0.5, Box::new(CubicInOut));
+        }
+    }
+    
     pub fn update(&mut self, delta_time: f32) {
+        if self.paused {
+            return;
+        }
         let alpha = self.tween.move_by(delta_time);
         match self.current_move {
             Move::Top => {
-                self.moving_pieces.rotate_z(alpha);
+                self.moving_pieces.rotate_z(-alpha);
             }
             Move::Bottom => {
                 self.moving_pieces.rotate_z(alpha);
@@ -198,10 +269,10 @@ impl Rubik {
                 self.moving_pieces.rotate_x(alpha);
             }
             Move::Right => {
-                self.moving_pieces.rotate_x(alpha);
+                self.moving_pieces.rotate_x(-alpha);
             }
             Move::Front => {
-                self.moving_pieces.rotate_y(alpha);
+                self.moving_pieces.rotate_y(-alpha);
             }
             Move::Back => {
                 self.moving_pieces.rotate_y(alpha);
