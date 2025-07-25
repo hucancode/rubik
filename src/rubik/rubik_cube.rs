@@ -87,10 +87,10 @@ impl Rubik {
         }
     }
     pub fn start_move_random(&mut self) {
-        let mut rng = rand::thread_rng();
-        self.current_move = Move::from(rng.gen_range(0..6));
+        let mut rng = rand::rng();
+        self.current_move = Move::from(rng.random_range(0..6));
         let size = CUBE_SIZE + CUBE_MARGIN;
-        let depth = rng.gen_range(1..self.span * 2) as f32 * size * 0.5;
+        let depth = rng.random_range(1..self.span * 2) as f32 * size * 0.5;
         match self.current_move {
             Move::Top => {
                 for piece in self.static_pieces.extract_child_if(|piece| {
@@ -142,9 +142,9 @@ impl Rubik {
             }
             _ => {}
         };
-        let rotate_amount = PI * 0.5 * rng.gen_range(1..=3) as f32;
-        let rotate_time = 0.5 + 0.1 * rng.gen_range(0..10) as f32;
-        match rng.gen_range(0..28) {
+        let rotate_amount = PI * 0.5 * rng.random_range(1..=3) as f32;
+        let rotate_time = 0.5 + 0.1 * rng.random_range(0..10) as f32;
+        match rng.random_range(0..28) {
             0 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(BackIn)),
             1 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(BackInOut)),
             2 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(BackOut)),
