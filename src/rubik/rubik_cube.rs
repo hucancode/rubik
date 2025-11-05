@@ -1,7 +1,7 @@
 use crate::geometry::Mesh;
 use crate::material::ShaderLit;
 use crate::rubik::Move;
-use crate::world::{new_entity, new_group, Node, NodeRef, Renderer};
+use crate::world::{Node, NodeRef, Renderer, new_entity, new_group};
 use rand::Rng;
 use std::f32::consts::PI;
 use std::rc::Rc;
@@ -142,39 +142,37 @@ impl Rubik {
             }
             _ => {}
         };
-        let rotate_amount = PI * 0.5 * rng.random_range(1..=3) as f32;
-        let rotate_time = 0.5 + 0.1 * rng.random_range(0..10) as f32;
+        let rotation = PI * 0.5 * rng.random_range(1..=3) as f32;
+        let t = 0.5 + 0.1 * rng.random_range(0..10) as f32;
         match rng.random_range(0..28) {
-            0 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(BackIn)),
-            1 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(BackInOut)),
-            2 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(BackOut)),
-            3 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(BounceIn)),
-            4 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(BounceInOut)),
-            5 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(BounceOut)),
-            6 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(CircIn)),
-            7 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(CircInOut)),
-            8 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(CircOut)),
-            9 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(CubicIn)),
-            10 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(CubicInOut)),
-            11 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(CubicOut)),
-            12 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(ElasticIn)),
-            13 => {
-                self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(ElasticInOut))
-            }
-            14 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(ElasticOut)),
-            15 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(ExpoIn)),
-            16 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(ExpoInOut)),
-            17 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(ExpoOut)),
-            18 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(QuadIn)),
-            19 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(QuadInOut)),
-            20 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(QuadOut)),
-            21 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(QuintIn)),
-            22 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(QuintInOut)),
-            23 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(QuintOut)),
-            24 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(SineIn)),
-            25 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(SineInOut)),
-            26 => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(SineOut)),
-            _ => self.tween = Tweener::new(0.0, rotate_amount, rotate_time, Box::new(Linear)),
+            0 => self.tween = Tweener::new(0.0, rotation, t, Box::new(BackIn)),
+            1 => self.tween = Tweener::new(0.0, rotation, t, Box::new(BackInOut)),
+            2 => self.tween = Tweener::new(0.0, rotation, t, Box::new(BackOut)),
+            3 => self.tween = Tweener::new(0.0, rotation, t, Box::new(BounceIn)),
+            4 => self.tween = Tweener::new(0.0, rotation, t, Box::new(BounceInOut)),
+            5 => self.tween = Tweener::new(0.0, rotation, t, Box::new(BounceOut)),
+            6 => self.tween = Tweener::new(0.0, rotation, t, Box::new(CircIn)),
+            7 => self.tween = Tweener::new(0.0, rotation, t, Box::new(CircInOut)),
+            8 => self.tween = Tweener::new(0.0, rotation, t, Box::new(CircOut)),
+            9 => self.tween = Tweener::new(0.0, rotation, t, Box::new(CubicIn)),
+            10 => self.tween = Tweener::new(0.0, rotation, t, Box::new(CubicInOut)),
+            11 => self.tween = Tweener::new(0.0, rotation, t, Box::new(CubicOut)),
+            12 => self.tween = Tweener::new(0.0, rotation, t, Box::new(ElasticIn)),
+            13 => self.tween = Tweener::new(0.0, rotation, t, Box::new(ElasticInOut)),
+            14 => self.tween = Tweener::new(0.0, rotation, t, Box::new(ElasticOut)),
+            15 => self.tween = Tweener::new(0.0, rotation, t, Box::new(ExpoIn)),
+            16 => self.tween = Tweener::new(0.0, rotation, t, Box::new(ExpoInOut)),
+            17 => self.tween = Tweener::new(0.0, rotation, t, Box::new(ExpoOut)),
+            18 => self.tween = Tweener::new(0.0, rotation, t, Box::new(QuadIn)),
+            19 => self.tween = Tweener::new(0.0, rotation, t, Box::new(QuadInOut)),
+            20 => self.tween = Tweener::new(0.0, rotation, t, Box::new(QuadOut)),
+            21 => self.tween = Tweener::new(0.0, rotation, t, Box::new(QuintIn)),
+            22 => self.tween = Tweener::new(0.0, rotation, t, Box::new(QuintInOut)),
+            23 => self.tween = Tweener::new(0.0, rotation, t, Box::new(QuintOut)),
+            24 => self.tween = Tweener::new(0.0, rotation, t, Box::new(SineIn)),
+            25 => self.tween = Tweener::new(0.0, rotation, t, Box::new(SineInOut)),
+            26 => self.tween = Tweener::new(0.0, rotation, t, Box::new(SineOut)),
+            _ => self.tween = Tweener::new(0.0, rotation, t, Box::new(Linear)),
         };
     }
     pub fn finish_move(&mut self) {
@@ -196,63 +194,69 @@ impl Rubik {
             self.current_move = move_type;
             let size = CUBE_SIZE + CUBE_MARGIN;
             let threshold = size * (self.span as f32 - 0.5);
-            
+
             match self.current_move {
                 Move::Top => {
                     // Top face - highest Z layer
-                    for piece in self.static_pieces.extract_child_if(|piece| {
-                        piece.get_translation().z > threshold
-                    }) {
+                    for piece in self
+                        .static_pieces
+                        .extract_child_if(|piece| piece.get_translation().z > threshold)
+                    {
                         self.moving_pieces.add_child(piece.clone());
                     }
                 }
                 Move::Bottom => {
                     // Bottom face - lowest Z layer
-                    for piece in self.static_pieces.extract_child_if(|piece| {
-                        piece.get_translation().z < -threshold
-                    }) {
+                    for piece in self
+                        .static_pieces
+                        .extract_child_if(|piece| piece.get_translation().z < -threshold)
+                    {
                         self.moving_pieces.add_child(piece.clone());
                     }
                 }
                 Move::Left => {
                     // Left face - lowest X layer
-                    for piece in self.static_pieces.extract_child_if(|piece| {
-                        piece.get_translation().x < -threshold
-                    }) {
+                    for piece in self
+                        .static_pieces
+                        .extract_child_if(|piece| piece.get_translation().x < -threshold)
+                    {
                         self.moving_pieces.add_child(piece.clone());
                     }
                 }
                 Move::Right => {
                     // Right face - highest X layer
-                    for piece in self.static_pieces.extract_child_if(|piece| {
-                        piece.get_translation().x > threshold
-                    }) {
+                    for piece in self
+                        .static_pieces
+                        .extract_child_if(|piece| piece.get_translation().x > threshold)
+                    {
                         self.moving_pieces.add_child(piece.clone());
                     }
                 }
                 Move::Front => {
                     // Front face - highest Y layer
-                    for piece in self.static_pieces.extract_child_if(|piece| {
-                        piece.get_translation().y > threshold
-                    }) {
+                    for piece in self
+                        .static_pieces
+                        .extract_child_if(|piece| piece.get_translation().y > threshold)
+                    {
                         self.moving_pieces.add_child(piece.clone());
                     }
                 }
                 Move::Back => {
                     // Back face - lowest Y layer
-                    for piece in self.static_pieces.extract_child_if(|piece| {
-                        piece.get_translation().y < -threshold
-                    }) {
+                    for piece in self
+                        .static_pieces
+                        .extract_child_if(|piece| piece.get_translation().y < -threshold)
+                    {
                         self.moving_pieces.add_child(piece.clone());
                     }
                 }
                 _ => {}
             };
-            
+
             self.tween = Tweener::new(0.0, PI * 0.5, 0.5, Box::new(CubicInOut));
         }
     }
-    
+
     pub fn update(&mut self, delta_time: f32) {
         if self.paused {
             return;
