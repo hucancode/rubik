@@ -81,8 +81,8 @@ impl App {
         let lights = vec![
             (
                 Color {
-                    r: 0.0,
-                    g: 0.5,
+                    r: 1.0,
+                    g: 0.8,
                     b: 1.0,
                     a: 1.0,
                 },
@@ -103,7 +103,18 @@ impl App {
             ),
             (
                 Color {
-                    r: 0.0,
+                    r: 0.8,
+                    g: 0.5,
+                    b: 1.0,
+                    a: 1.0,
+                },
+                LIGHT_RADIUS,
+                LIGHT_INTENSITY,
+                6200,
+            ),
+            (
+                Color {
+                    r: 1.0,
                     g: 1.0,
                     b: 0.5,
                     a: 1.0,
@@ -146,30 +157,30 @@ impl App {
             return;
         };
         renderer.time = time as f32;
-        
+
         // Update egui
         if let Some(egui_state) = self.egui_state.as_mut() {
             if let Some(window) = self.window.as_ref() {
                 let raw_input = egui_state.take_egui_input(window);
                 self.egui_ctx.begin_pass(raw_input);
                 self.egui_frame_started = true;
-                
+
                 // Create debug GUI
                 egui::Window::new("Debug Controls")
                     .show(&self.egui_ctx, |ui| {
                         ui.heading("Rubik's Cube Controls");
-                        
+
                         ui.separator();
-                        
+
                         if ui.button(if self.rubik.paused { "Resume" } else { "Pause" }).clicked() {
                             self.rubik.paused = !self.rubik.paused;
                         }
-                        
+
                         ui.checkbox(&mut self.rubik.auto_move, "Auto Move");
-                        
+
                         ui.separator();
                         ui.label("Manual Rotation:");
-                        
+
                         ui.horizontal(|ui| {
                             if ui.button("U").clicked() {
                                 self.rubik.perform_move(Move::Top);
@@ -178,7 +189,7 @@ impl App {
                                 self.rubik.perform_move(Move::Bottom);
                             }
                         });
-                        
+
                         ui.horizontal(|ui| {
                             if ui.button("L").clicked() {
                                 self.rubik.perform_move(Move::Left);
@@ -187,7 +198,7 @@ impl App {
                                 self.rubik.perform_move(Move::Right);
                             }
                         });
-                        
+
                         ui.horizontal(|ui| {
                             if ui.button("F").clicked() {
                                 self.rubik.perform_move(Move::Front);
@@ -196,12 +207,12 @@ impl App {
                                 self.rubik.perform_move(Move::Back);
                             }
                         });
-                        
+
                         ui.separator();
                         ui.label("Camera Controls:");
                         ui.label("• Left mouse drag: Orbit");
                         ui.label("• Mouse wheel: Zoom");
-                        
+
                         ui.separator();
                         let camera = &renderer.camera;
                         ui.label(format!("Distance: {:.1}", camera.distance));
@@ -286,19 +297,19 @@ impl ApplicationHandler<Renderer> for App {
         log::info!("got renderer!");
         self.renderer = Some(renderer);
         self.init();
-        
+
         // Initialize egui state
         if let Some(window) = self.window.as_ref() {
             // Create a new context for egui
             let egui_ctx = egui::Context::default();
-            
+
             // Set up fonts before creating state
             egui_ctx.set_fonts(egui::FontDefinitions::default());
-            
+
             // Get scale factor from window
             let scale_factor = window.scale_factor() as f32;
             egui_ctx.set_pixels_per_point(scale_factor);
-            
+
             let viewport_id = egui_ctx.viewport_id();
             let egui_state = EguiState::new(
                 egui_ctx.clone(),
@@ -326,7 +337,7 @@ impl ApplicationHandler<Renderer> for App {
                 egui_consumed = response.consumed;
             }
         }
-        
+
         if event == WindowEvent::CloseRequested {
             event_loop.exit();
         } else if let Some(renderer) = self.renderer.as_mut() {
@@ -337,12 +348,12 @@ impl ApplicationHandler<Renderer> for App {
                             if self.egui_frame_started {
                                 let egui_output = self.egui_ctx.end_pass();
                                 egui_state.handle_platform_output(window, egui_output.platform_output);
-                                
+
                                 let clipped_primitives = self.egui_ctx.tessellate(
                                     egui_output.shapes,
                                     self.egui_ctx.pixels_per_point(),
                                 );
-                                
+
                                 renderer.draw(&self.egui_ctx, clipped_primitives, egui_output.textures_delta);
                                 self.egui_frame_started = false;
                             } else {
@@ -403,14 +414,14 @@ impl ApplicationHandler<Renderer> for App {
                 }
                 WindowEvent::CursorMoved { position, .. } => {
                     let current_pos = (position.x as f32, position.y as f32);
-                    
+
                     if !egui_consumed && self.mouse_down {
                         let delta_x = current_pos.0 - self.last_mouse_pos.0;
                         let delta_y = current_pos.1 - self.last_mouse_pos.1;
-                        
+
                         renderer.camera.orbit(-delta_x * 0.01, delta_y * 0.01);
                     }
-                    
+
                     self.last_mouse_pos = current_pos;
                 }
                 WindowEvent::MouseWheel { delta, .. } => {
